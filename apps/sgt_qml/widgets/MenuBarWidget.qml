@@ -62,7 +62,7 @@ MenuBar {
     // }
     Menu {
         title: "Properties"
-        MenuItem { id:mnuProperties; text: "Graph Properties"; enabled: false; onTriggered: dialogProperties.open() }
+        MenuItem { id:mnuProperties; text: "Graph Properties"; enabled: false; onTriggered: dialogGraphProperties.open() }
     }
     Menu {
         title: "Help"
