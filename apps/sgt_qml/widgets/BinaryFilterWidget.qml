@@ -9,7 +9,7 @@ ColumnLayout {
     Layout.fillWidth: true
     Layout.leftMargin: 10
     Layout.alignment: Qt.AlignLeft
-    visible: mainController.img_loaded()
+    visible: mainController.display_type() !== "welcome"
 
     property int btnWidth: 100
     property int spbWidth: 170
@@ -303,7 +303,7 @@ ColumnLayout {
 
         function onImageChangedSignal() {
             // Force refresh
-            imgBinControls.visible = mainController.img_loaded();
+            imgBinControls.visible = mainController.display_type() !== "welcome";
         }
 
     }

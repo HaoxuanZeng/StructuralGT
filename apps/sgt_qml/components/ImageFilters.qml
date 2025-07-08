@@ -41,7 +41,7 @@ Rectangle {
                 Layout.topMargin: 20
                 text: "No image filters to show!"
                 color: "#808080"
-                visible: !mainController.img_loaded()
+                visible: mainController.display_type() !== "welcome" // TODO: account for point network
             }
             BinaryFilterWidget{}
 
@@ -75,7 +75,7 @@ Rectangle {
 
         function onImageChangedSignal() {
             // Force refresh
-            lblNoImgFilters.visible = !mainController.img_loaded();
+            lblNoImgFilters.visible = mainController.display_type() === "welcome";
         }
 
     }

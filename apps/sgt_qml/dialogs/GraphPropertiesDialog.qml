@@ -100,7 +100,7 @@ Dialog {
                 Layout.preferredWidth: 54
                 Layout.preferredHeight: 30
                 text: ""
-                onClicked: dialogGraphJProperties.close()
+                onClicked: dialogGraphProperties.close()
                 Rectangle {
                     anchors.fill: parent
                     radius: 5

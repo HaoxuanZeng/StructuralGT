@@ -72,21 +72,21 @@ ApplicationWindow {
     Platform.FolderDialog {
         id: imageFolderDialog
         title: "Select a Folder"
-        onAccepted: mainController.add_image(imageFolderDialog.folder, "3D");
+        onAccepted: mainController.add_handler(imageFolderDialog.folder, "3D");
     }
 
     QuickDialogs.FileDialog {
         id: imageFileDialog
         title: "Open file"
         nameFilters: [mainController.get_file_extensions("img")]
-        onAccepted: mainController.add_image(imageFileDialog.selectedFile, "2D");
+        onAccepted: mainController.add_handler(imageFileDialog.selectedFile, "2D");
     }
 
     QuickDialogs.FileDialog {
         id: csvFileDialog
         title: "Open CSV File"
         nameFilters: ["CSV files (*.csv)"]
-        onAccepted: mainController.add_image(csvFileDialog.selectedFile, "Point");
+        onAccepted: mainController.add_handler(csvFileDialog.selectedFile, "Point");
     }
 
     Connections {

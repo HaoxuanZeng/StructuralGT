@@ -16,7 +16,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         color: "transparent"
-        visible: !mainController.img_loaded()
+        visible: mainController.display_type() === "welcome"
 
         ColumnLayout {
             anchors.centerIn: parent
@@ -116,7 +116,7 @@ ColumnLayout {
         Layout.fillHeight: true
         color: "transparent"
         clip: true  // Ensures only the selected area is visible
-        visible: mainController.img_loaded()
+        visible: mainController.display_type() === "original" || mainController.display_type() === "binary"
 
         Flickable {
             id: flickableArea
@@ -190,12 +190,23 @@ ColumnLayout {
     }
 
     Rectangle {
+        id: graphContainer
+        objectName: "graphContainer" // IMPORTANT: Python will find this
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        color: "#ffffff"
+        border.color: "#d0d0d0"
+        border.width: 1
+        visible: mainController.display_type() === "graph"
+    }
+
+    Rectangle {
         id: imgNavControls
         height: 32
         Layout.fillHeight: false
         Layout.fillWidth: true
         color: "transparent"
-        visible: mainController.img_loaded()
+        visible: mainController.is_3d_img()
 
         RowLayout {
             anchors.fill: parent
@@ -281,9 +292,9 @@ ColumnLayout {
 
         function onImageChangedSignal() {
             // Force refresh
-            welcomeContainer.visible = mainController.img_loaded() ? false : true;
-            imgContainer.visible = mainController.img_loaded();
-            imgNavControls.visible = mainController.img_loaded() && mainController.is_3d();
+            welcomeContainer.visible = mainController.display_type() === "welcome";
+            imgContainer.visible = mainController.display_type() === "original" || mainController.display_type() === "binary";
+            imgNavControls.visible = mainController.is_3d_img();
             sliceNavInfo.currentSlice = mainController.get_selected_slice_index() + 1;
             sliceNavInfo.totalSlice = mainController.get_number_of_slices();
 

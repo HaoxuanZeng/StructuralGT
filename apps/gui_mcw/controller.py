@@ -13,6 +13,7 @@ from ovito.vis import Viewport
 from ovito.gui import create_qwidget
 from typing import TYPE_CHECKING
 from PySide6.QtWidgets import QApplication
+from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QObject, Signal, Slot
 
 if TYPE_CHECKING:
@@ -45,9 +46,10 @@ class MainController(QObject):
     imageChangedSignal = Signal()
     taskFinishedSignal = Signal(bool, object)  # success/fail (True/False), result (object)
 
-    def __init__(self, qml_app: QApplication):
+    def __init__(self, qml_app: QApplication, qml_engine: QQmlApplicationEngine):
         super().__init__()
         self.qml_app = qml_app
+        self.qml_engine = qml_engine
 
         # Create network objects
         self.handlers = []
@@ -72,6 +74,8 @@ class MainController(QObject):
             return "Project files (*.sgtproj)"
         elif option == "csv":
             return "CSV files (*.csv)"
+        elif option == "gsd":
+            return "GSD files (*.gsd)"
         else:
             return ""
 
@@ -122,12 +126,12 @@ class MainController(QObject):
             )
             return None
 
-    # TODO: do we need this?
     @Slot(result=bool)
-    def img_loaded(self):
-        if self.handlers:
-            return self.get_selected_handler().img_loaded
-        return False
+    def is_3d_img(self):
+        """Check if the selected image is a 3D image."""
+        if not self.handlers:
+            return False
+        return isinstance(self.get_selected_handler(), NetworkHandler) and self.get_selected_handler().dim == 3
 
     @Slot(result=bool)
     def graph_loaded(self):
@@ -135,18 +139,12 @@ class MainController(QObject):
             return self.get_selected_handler().graph_loaded
         return False
 
-    # TODO: do we need this?
-    @Slot(result=bool)
-    def is_3d(self):
-        return self.get_selected_handler().is_3d
-
     @Slot(result=str)
     def display_type(self):
         if not self.handlers:
-            return ""
+            return "welcome"
         return self.get_selected_handler().display_type
 
-    # TODO: point network does not have this
     @Slot(result=int)
     def get_selected_slice_index(self):
         """Get the selected slice index of the selected image."""
@@ -154,13 +152,11 @@ class MainController(QObject):
             return -1
         return self.get_selected_handler().selected_slice_index
 
-    # TODO: point network does not have this
     @Slot(result=int)
     def get_number_of_slices(self):
         """Get the number of slices of the selected image."""
         return self.get_selected_handler().network.image.shape[0]
 
-    # TODO: point network does not have this
     @Slot(int, result=bool)
     def set_selected_slice_index(self, index):
         """Set the selected slice index of the selected image."""
@@ -191,8 +187,7 @@ class MainController(QObject):
             return True
         return False
 
-    # TODO: make it compatible with point network
-    def create_handler(self, img_path, type):
+    def create_handler(self, path, type):
         """
         A function that processes a selected image file and creates an analyzer object with default configurations.
 
@@ -202,36 +197,34 @@ class MainController(QObject):
         Returns:
         """
 
-        img_path = self.verify_path(img_path)
-        if not img_path:
+        path = self.verify_path(path)
+        if not path:
             return False
-        print(img_path)
+        print(path)
 
         # Try reading the image
         try:
             if type == "3D":
                 # Create a 3D image object
-                self.handlers.append(NetworkHandler(img_path, dim=3))
+                self.handlers.append(NetworkHandler(path, dim=3))
             elif type == "2D":
                 # Create a temporary directory for the image
                 prefix = "sgt_"
                 temp_dir = tempfile.TemporaryDirectory(prefix=prefix)
 
                 # Copy the image to the temporary directory
-                temp_img_path = os.path.join(
-                    temp_dir.name, os.path.basename(img_path)
+                temp_path = os.path.join(
+                    temp_dir.name, os.path.basename(path)
                 )
-                shutil.copy(img_path, temp_img_path)
+                shutil.copy(path, temp_path)
 
                 print(temp_dir.name)
 
-                # Create a 2d image object
-                self.handlers.append(NetworkHandler(temp_dir, dim=2))
+                if type == "2D":
+                    # Create a 2d image object
+                    self.handlers.append(NetworkHandler(temp_dir, dim=2))
             elif type == "Point":
-                positions = pd.read_csv(img_path)
-                positions = positions[["x", "y", "z"]].values
-                self.handlers.append(PointNetworkHandler(positions, cutoff=1.0))
-
+                self.handlers.append(PointNetworkHandler(path, cutoff=1200))
             return True
 
         except Exception as err:
@@ -255,7 +248,11 @@ class MainController(QObject):
                 for i, handler in enumerate(self.handlers)]
             )
 
-            self.load_image()
+            if isinstance(self.get_selected_handler(), NetworkHandler):
+                self.load_image()
+            else:
+                self.load_graph()
+
             return True
         return False
 
@@ -274,11 +271,8 @@ class MainController(QObject):
                 for i, handler in enumerate(self.handlers)]
         )
 
-        # Load the first image or reset if no images left
-        self.load_image()
         return True
 
-    # TODO: make it compatible with point network
     @Slot(int)
     def load_image(self, index=None):
         """Load the image of the selected network handler."""
@@ -292,7 +286,7 @@ class MainController(QObject):
 
             self.changeImageSignal.emit()
         except Exception as err:
-            # self.delete_sgt_object()
+            self.delete_handler(self.selected_index)
             self.selected_index = 0
             logging.exception(
                 "Image Loading Error: %s", err, extra={"user": "SGT Logs"}
@@ -312,7 +306,6 @@ class MainController(QObject):
         )
         return "image://imageProvider/" + str(unique_num)
 
-    # TODO: point network does not have this
     @Slot(str)
     def run_binarizer(self, options):
         """Run the binarizer on the selected image"""
@@ -379,6 +372,7 @@ class MainController(QObject):
         else:
             self.showAlertSignal.emit(result[0], result[1])
 
+    # TODO: account for point network
     @Slot(str, result=bool)
     def toggle_current_img_view(self, display_type):
         print(f"Display type: {display_type}")
@@ -399,28 +393,44 @@ class MainController(QObject):
             self.load_image()
             return True
 
+    # TODO: make it compatible with point network
     def load_graph(self):
         """Render and visualize OVITO graph network simulation."""
         try:
+
             # Clear any existing scene
             for p_line in list(scene.pipelines):
                 p_line.remove_from_scene()
 
-            # Create OVITO data pipeline
-            image = self.get_selected_handler()
-            gsd_file = os.path.join(
-                image.img_path.name, "Binarized/network.gsd"
-            ) if not image.is_3d else os.path.join(
-                image.img_path, "Binarized/network.gsd"
-            )
-            pipeline = import_file(gsd_file)
-            pipeline.add_to_scene()
+            # Find the QML Rectangle to embed into
+            root = self.qml_engine.rootObjects()[0]
+            graph_container = root.findChild(QObject, "graphContainer")
 
-            vp = Viewport(type=Viewport.Type.Perspective, camera_dir=(2, 1, -1))
-            ovito_widget = create_qwidget(vp, parent=self.qml_app.activeWindow())
-            ovito_widget.setMinimumSize(800, 500)
-            vp.zoom_all((800, 500))
-            ovito_widget.show()
+            if graph_container:
+
+                # Grab rectangle properties
+                x = graph_container.property("x")
+                y = graph_container.property("y")
+                w = graph_container.property("width")
+                h = graph_container.property("height")
+
+                # Create OVITO data pipeline
+                handler = self.get_selected_handler()
+                if isinstance(handler, PointNetworkHandler):
+                    gsd_file = os.path.join(os.path.dirname(handler.path), "skel.gsd")
+                elif isinstance(handler, NetworkHandler):
+                    gsd_file = os.path.join(handler.path, "Binarized/network.gsd")
+                pipeline = import_file(gsd_file)
+                pipeline.add_to_scene()
+
+                vp = Viewport(type=Viewport.Type.Perspective, camera_dir=(2, 1, -1))
+                ovito_widget = create_qwidget(vp, parent=self.qml_app.activeWindow())
+                ovito_widget.setMinimumSize(800, 500)
+                vp.zoom_all((800, 500))
+
+                # Re-parent OVITO QWidget
+                ovito_widget.setGeometry(x, y, w, h)
+                ovito_widget.show()
 
         except Exception as e:
             print("Graph Simulation Error:", e)
@@ -428,21 +438,22 @@ class MainController(QObject):
     @Slot()
     def update_image_model(self):
         """Update the image properties model with the selected image's properties."""
-        image = self.get_selected_handler()
+        handler = self.get_selected_handler()
 
-        if image is None:
+        if handler is None or isinstance(handler, PointNetworkHandler):
+            self.imagePropsModel.reset_data([])
             return
 
-        if image.is_3d:
+        if handler.dim == 3:
             image_props = [
-                ["Name", f"{image.img_path}"],
-                ["Depth x Height x Width", f"{image.network.image.shape[0]} x {image.network.image.shape[1]} x {image.network.image.shape[2]}"],
+                ["Name", f"{handler.path}"],
+                ["Depth x Height x Width", f"{handler.network.image.shape[0]} x {handler.network.image.shape[1]} x {handler.network.image.shape[2]}"],
                 ["Dimensions", "3D"]
             ]
         else:
             image_props = [
-                ["Name", f"{image.img_path.name}"],
-                ["Height x Width", f"{image.network.image.shape[0]} x {image.network.image.shape[1]}"],
+                ["Name", f"{handler.path.name}"],
+                ["Height x Width", f"{handler.network.image.shape[0]} x {handler.network.image.shape[1]}"],
                 ["Dimensions", "2D"]
             ]
 
@@ -451,18 +462,18 @@ class MainController(QObject):
     @Slot()
     def update_graph_model(self):
         """Update the graph properties model with the selected image's graph properties."""
-        image = self.get_selected_handler()
+        handler = self.get_selected_handler()
 
-        if image is None:
+        if handler is None:
             return
 
-        if image.graph_loaded:
+        if handler.graph_loaded:
             graph_props = [
-                ["Edge Count", f"{image.network.graph.ecount()}"],
-                ["Node Count", f"{image.network.graph.vcount()}"],
+                ["Edge Count", f"{handler.network.graph.ecount()}"],
+                ["Node Count", f"{handler.network.graph.vcount()}"],
             ]
 
-            for key, value in image.properties.items():
+            for key, value in handler.properties.items():
                 if value:
                     graph_props.append([key, f"{value:.5f}"])
 

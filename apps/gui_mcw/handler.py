@@ -1,5 +1,6 @@
 from StructuralGT.networks import Network, PointNetwork
 import pandas as pd
+import os
 
 class Handler:
     """Base class to handle different types of networks."""
@@ -23,10 +24,10 @@ class Handler:
 class NetworkHandler(Handler):
     """Class to handle Network loading and processing."""
 
-    def __init__(self, path, dim=2):
-        self.path = path if dim == 3 else path.name
+    def __init__(self, path, dim):
+        super().__init__(path)
         self.dim = dim
-        self.network = Network(path, dim)
+        self.network = Network(path.name, dim=dim)
         self.img_loaded = False
         self.binary_loaded = False
         self.graph_loaded = False
@@ -53,11 +54,8 @@ class PointNetworkHandler(Handler):
     """Class to handle PointNetwork loading and processing."""
 
     def __init__(self, path, cutoff):
-        self.path = path.name
+        super().__init__(path)
         positions = pd.read_csv(self.path)
         positions = positions[["x", "y", "z"]].values # TODO: What about 2D?
         self.network = PointNetwork(positions, cutoff)
-
-    def __init__(self, path):
-        self.path = path.name
-        self.network = PointNetwork.from_gsd(path)
+        self.network.point_to_skel(filename=os.path.join(os.path.dirname(self.path), "skel.gsd"))
