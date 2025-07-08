@@ -83,6 +83,29 @@ ColumnLayout {
                         }
                     }
                 }
+
+                Button {
+                    id: btnAddPointNetwork
+                    Layout.preferredWidth: 125
+                    Layout.preferredHeight: 32
+                    text: ""
+                    onClicked: csvFileDialog.open()
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 5
+                        color: "#808080"
+
+                        Label {
+                            text: "Add Point Network"
+                            color: "white"
+                            font.bold: true
+                            font.pixelSize: 12
+                            anchors.centerIn: parent
+                        }
+                    }
+                }
+
             }
         }
     }
