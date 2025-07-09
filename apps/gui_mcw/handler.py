@@ -27,7 +27,7 @@ class NetworkHandler(Handler):
     def __init__(self, path, dim):
         super().__init__(path)
         self.dim = dim
-        self.network = Network(path.name, dim=dim)
+        self.network = Network(path, dim=dim) if dim == 3 else Network(path.name, dim=dim)
         self.img_loaded = False
         self.binary_loaded = False
         self.graph_loaded = False

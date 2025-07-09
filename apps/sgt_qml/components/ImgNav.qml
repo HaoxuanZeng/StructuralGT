@@ -101,13 +101,13 @@ Rectangle {
         FileDialog {
             id: imageFileDialog
             title: "Choose a 2D image"
-            onAccepted: mainController.add_image(file, false)
+            onAccepted: mainController.add_handler(file, "2D")
         }
 
         FolderDialog {
             id: imageFolderDialog
             title: "Choose folder for 3D image"
-            onAccepted: mainController.add_image(folder, true)
+            onAccepted: mainController.add_handler(folder, "3D")
         }
 
         property int contextMenuRow: -1
