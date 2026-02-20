@@ -1,15 +1,17 @@
 """Main controller for StructuralGT GUI."""
 
-from PySide6.QtCore import QObject, Signal, QThread
-from service.ui_service import UIService
-from service.network_service import NetworkService
-from model.handler import HandlerRegistry, NetworkHandler, PointNetworkHandler
-from model.task_list_model import Task
-from typing import Optional, Callable, Any
-import numpy as np
 import logging
 import uuid
 from datetime import datetime
+from typing import Any, Callable, Optional
+
+import numpy as np
+from model.handler import HandlerRegistry, NetworkHandler, PointNetworkHandler
+from model.task_list_model import Task
+from PySide6.QtCore import QObject, QThread, Signal
+
+from service.network_service import NetworkService
+from service.ui_service import UIService
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +178,24 @@ class MainController(QObject):
             self.alert_signal.emit("Failed to get selected extracted graph", repr(e))
             return None
         return pipeline
+
+    def plot_selected_handler(self, plot_name: str, ax):
+        """Plot the selected handler."""
+        dispatch = {
+            "skeleton": NetworkService.plot_skeleton,
+            "graph": NetworkService.plot_graph,
+            "degree_heatmap": NetworkService.plot_degree_heatmap,
+            "betweenness_centrality_heatmap": NetworkService.plot_betweenness_centrality_heatmap,
+            "closeness_centrality_heatmap": NetworkService.plot_closeness_centrality_heatmap,
+            "degree_distribution": NetworkService.plot_degree_distribution,
+            "betweenness_centrality_distribution": NetworkService.plot_betweenness_centrality_distribution,
+            "closeness_centrality_distribution": NetworkService.plot_closeness_centrality_distribution,
+        }
+        fn = dispatch[plot_name]
+        try:
+            fn(self.handler_registry, ax)
+        except Exception as e:
+            self.alert_signal.emit("Failed to plot", repr(e))
 
     # ========================= Worker thread methods =========================
     def binarize_selected_network(self, options: dict):

@@ -1,15 +1,17 @@
 """List model for the StructuralGT GUI."""
 
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
+from typing import Any, Optional
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, Signal
 from PySide6.QtGui import QImage, QPixmap
-from typing import Any, Optional
+
 from model.handler import (
-    HandlerRegistry,
     Handler,
+    HandlerRegistry,
     NetworkHandler,
     PointNetworkHandler,
 )
@@ -94,7 +96,8 @@ class HandlerListModel(QAbstractListModel):
         network = handler["network"]
         if isinstance(network, Network):
             image_array = network.image
-            thumbnail = self._generate_thumbnail(image_array)
+            dim = handler["network_properties"]["dim"]
+            thumbnail = self._generate_thumbnail(image_array, dim)
         elif isinstance(network, PointNetwork):
             thumbnail = None  # TODO: Determine the thumbnail for point networks
         else:
@@ -105,14 +108,13 @@ class HandlerListModel(QAbstractListModel):
             return thumbnail
         return None
 
-    def _generate_thumbnail(self, image_array: np.ndarray) -> Optional[QPixmap]:
+    def _generate_thumbnail(self, image_array: np.ndarray, dim: int) -> Optional[QPixmap]:
         """Generate the thumbnail for 2D and 3D images."""
         if image_array is None or image_array.size == 0:
             return None
 
-        dim = len(image_array.shape)
         if dim == 3:
-            image = image_array[:, :, 0]
+            image = image_array[0]
         elif dim == 2:
             image = image_array
         else:
@@ -120,7 +122,11 @@ class HandlerListModel(QAbstractListModel):
 
         image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
 
-        h, w = image.shape
+        # If the image is RGBA, convert it to RGB
+        if image.ndim == 3 and image.shape[2] == 4:
+            image = image[:, :, :3]
+
+        h, w = image.shape[:2]
         if h == 0 or w == 0:
             return None
 
@@ -137,13 +143,24 @@ class HandlerListModel(QAbstractListModel):
             interpolation=cv2.INTER_AREA,
         )
 
-        q_image = QImage(
-            thumbnail.data,
-            new_w,
-            new_h,
-            new_w,
-            QImage.Format_Grayscale8,
-        )
+        if thumbnail.ndim == 2:
+            q_image = QImage(
+                thumbnail.data,
+                new_w,
+                new_h,
+                new_w,
+                QImage.Format_Grayscale8,
+            )
+        elif thumbnail.ndim == 3:
+            q_image = QImage(
+                thumbnail.data,
+                new_w,
+                new_h,
+                new_w * 3,
+                QImage.Format_RGB888,
+            )
+        else:
+            q_image = None
         return QPixmap.fromImage(q_image)
 
     def _get_handler_type(self, handler: Handler) -> str:

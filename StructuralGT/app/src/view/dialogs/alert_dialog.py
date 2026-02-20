@@ -1,13 +1,14 @@
 """Alert dialog for StructuralGT GUI."""
 
 import re
+
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
-    QPlainTextEdit,
     QDialogButtonBox,
+    QPlainTextEdit,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt
 
 
 def _format_error_message(message: str) -> str:

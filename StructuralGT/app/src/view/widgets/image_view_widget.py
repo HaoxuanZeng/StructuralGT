@@ -1,18 +1,18 @@
 """Image view widget for StructuralGT GUI."""
 
-import numpy as np
 import cv2
+import numpy as np
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QPixmap, QCursor, QImage
+from PySide6.QtGui import QCursor, QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
     QHBoxLayout,
-    QToolButton,
-    QScrollArea,
     QLabel,
-    QSizePolicy,
     QLineEdit,
+    QScrollArea,
+    QSizePolicy,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
 from service.main_controller import MainController
 from view.resources import get_icon_path
@@ -21,7 +21,7 @@ from view.resources import get_icon_path
 class ImageViewWidget(QWidget):
     """Image view widget for StructuralGT GUI."""
 
-    def __init__(self, controller: MainController, main_window, parent):
+    def __init__(self, parent, controller: MainController, main_window):
         """Initialize the image view widget."""
         super().__init__(parent)
         self.controller = controller
@@ -39,16 +39,13 @@ class ImageViewWidget(QWidget):
         zoom_layout.setContentsMargins(5, 5, 5, 5)
         zoom_layout.setSpacing(5)
 
-        theme = self.main_window.settings_service.get("theme")
         self.zoom_in_button = QToolButton()
-        self.zoom_in_button.setIcon(QIcon(get_icon_path("zoom_in.png", theme)))
+        self.zoom_in_button.setIcon(QIcon(get_icon_path("zoom_in.png")))
         self.zoom_in_button.setToolTip("Zoom In")
-        self.zoom_in_button.setStyleSheet("background-color: transparent;")
 
         self.zoom_out_button = QToolButton()
-        self.zoom_out_button.setIcon(QIcon(get_icon_path("zoom_out.png", theme)))
+        self.zoom_out_button.setIcon(QIcon(get_icon_path("zoom_out.png")))
         self.zoom_out_button.setToolTip("Zoom Out")
-        self.zoom_out_button.setStyleSheet("background-color: transparent;")
 
         zoom_layout.addWidget(self.zoom_in_button, alignment=Qt.AlignLeft)
         zoom_layout.addStretch(1)
@@ -73,14 +70,12 @@ class ImageViewWidget(QWidget):
         nav_layout.setSpacing(5)
 
         self.prev_button = QToolButton()
-        self.prev_button.setIcon(QIcon(get_icon_path("previous.png", theme)))
+        self.prev_button.setIcon(QIcon(get_icon_path("previous.png")))
         self.prev_button.setToolTip("Previous Slice")
-        self.prev_button.setStyleSheet("background-color: transparent;")
 
         self.next_button = QToolButton()
-        self.next_button.setIcon(QIcon(get_icon_path("next.png", theme)))
+        self.next_button.setIcon(QIcon(get_icon_path("next.png")))
         self.next_button.setToolTip("Next Slice")
-        self.next_button.setStyleSheet("background-color: transparent;")
 
         self.slice_label = QLabel("0 / 0")
         self.slice_label.setAlignment(Qt.AlignCenter)
@@ -145,8 +140,8 @@ class ImageViewWidget(QWidget):
         try:
             index = int(self.slice_input.text())
             handler = self.controller.handler_registry.get_selected()
-            if handler and handler["ui_properties"]["dim"] == 3:
-                pass
+            if handler and handler["network_properties"]["dim"] == 3:
+                self.controller.set_selected_slice_index(index - 1)
         except ValueError:
             pass
 
@@ -250,7 +245,7 @@ class ImageViewWidget(QWidget):
             return
 
         slice_index = handler["ui_properties"].get("selected_slice_index", 0)
-        dim = handler["ui_properties"].get("dim", 2)
+        dim = handler["network_properties"].get("dim", None)
 
         if dim == 2:
             # 2D image, only one slice
@@ -304,10 +299,3 @@ class ImageViewWidget(QWidget):
             return
         self._current_display_type = handler["ui_properties"]["display_type"]
         self._update_image()
-
-    def refresh_ui(self, theme: str):
-        """Refresh the icons of the image view widget."""
-        self.zoom_in_button.setIcon(QIcon(get_icon_path("zoom_in.png", theme)))
-        self.zoom_out_button.setIcon(QIcon(get_icon_path("zoom_out.png", theme)))
-        self.prev_button.setIcon(QIcon(get_icon_path("previous.png", theme)))
-        self.next_button.setIcon(QIcon(get_icon_path("next.png", theme)))

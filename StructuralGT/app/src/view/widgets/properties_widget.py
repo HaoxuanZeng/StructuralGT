@@ -1,20 +1,21 @@
 """Properties widget for StructuralGT GUI."""
 
-from ctypes import alignment
 import pathlib
+from ctypes import alignment
+
 import pandas as pd
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QTableView,
-    QSizePolicy,
-    QPushButton,
-)
-from service.main_controller import MainController
 from model.handler import NetworkHandler, PointNetworkHandler
 from model.table_model import TableModel
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
+)
+from service.main_controller import MainController
 from view.dialogs.file_dialog import export_file
 
 
@@ -32,17 +33,14 @@ class PropertiesWidget(QWidget):
         layout.setSpacing(0)
         layout.setAlignment(Qt.AlignTop)
 
-        # Empty state label
         self.empty_label = QLabel("No properties to show.", self)
         self.empty_label.setAlignment(Qt.AlignCenter)
         self.empty_label.setVisible(False)
-        self.empty_label.setStyleSheet("color: #666; font-size: 12px;")
+        self.empty_label.setContentsMargins(5, 5, 5, 5)
         layout.addWidget(self.empty_label)
 
-        # Image Properties
         self.image_label = QLabel("Image Properties", self)
         self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setStyleSheet("font-weight: bold;")
         self.image_label.setContentsMargins(5, 5, 5, 5)
         layout.addWidget(self.image_label)
 
@@ -56,15 +54,14 @@ class PropertiesWidget(QWidget):
         self.image_table.setSelectionBehavior(QTableView.SelectRows)
         self.image_table.setEditTriggers(QTableView.NoEditTriggers)
         self.image_table.horizontalHeader().setStretchLastSection(True)
+        self.image_table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.image_model = TableModel()
         self.image_table.setModel(self.image_model)
         layout.addWidget(self.image_table)
 
         layout.addSpacing(10)
 
-        # Graph Properties
         self.graph_label = QLabel("Graph Properties", self)
-        self.graph_label.setStyleSheet("font-weight: bold;")
         self.graph_label.setContentsMargins(5, 5, 5, 5)
         self.graph_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.graph_label)
@@ -79,16 +76,14 @@ class PropertiesWidget(QWidget):
         self.graph_table.setSelectionBehavior(QTableView.SelectRows)
         self.graph_table.setEditTriggers(QTableView.NoEditTriggers)
         self.graph_table.horizontalHeader().setStretchLastSection(True)
+        self.graph_table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.graph_model = TableModel()
         self.graph_table.setModel(self.graph_model)
         layout.addWidget(self.graph_table)
 
-        # Export Button
         self.export_button = QPushButton("Export All", self)
-        self.export_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.export_button.setMaximumWidth(self.parent().width() / 2)
         self.export_button.clicked.connect(self._on_export_button_clicked)
-        layout.addWidget(self.export_button, alignment=Qt.AlignCenter)
+        layout.addWidget(self.export_button)
 
         self.controller.handler_changed_signal.connect(self.refresh)
         self.controller.compute_graph_properties_finished_signal.connect(
@@ -143,19 +138,8 @@ class PropertiesWidget(QWidget):
             self.image_label.setVisible(True)
             self.image_table.setVisible(True)
             self.export_button.setVisible(True)
-            row_height = (
-                self.image_table.rowHeight(0)
-                if self.image_table.rowHeight(0) > 0
-                else 25
-            )
-            header_height = (
-                self.image_table.horizontalHeader().height()
-                if self.image_table.horizontalHeader().isVisible()
-                else 0
-            )
-            self.image_table.setFixedHeight(
-                len(image_data) * row_height + header_height + 10
-            )
+            row_height = self.image_table.verticalHeader().defaultSectionSize()
+            self.image_table.setFixedHeight(5 + len(image_data) * row_height)
         else:
             self.image_label.setVisible(False)
             self.image_table.setVisible(False)
@@ -169,19 +153,8 @@ class PropertiesWidget(QWidget):
             self.graph_label.setVisible(True)
             self.graph_table.setVisible(True)
             self.graph_table.resizeColumnsToContents()
-            row_height = (
-                self.graph_table.rowHeight(0)
-                if self.graph_table.rowHeight(0) > 0
-                else 25
-            )
-            header_height = (
-                self.graph_table.horizontalHeader().height()
-                if self.graph_table.horizontalHeader().isVisible()
-                else 0
-            )
-            self.graph_table.setFixedHeight(
-                len(graph_data) * row_height + header_height + 10
-            )
+            row_height = self.graph_table.verticalHeader().defaultSectionSize()
+            self.graph_table.setFixedHeight(5 + len(graph_data) * row_height)
         else:
             self.graph_label.setVisible(False)
             self.graph_table.setVisible(False)
@@ -201,7 +174,7 @@ class PropertiesWidget(QWidget):
         if isinstance(handler, NetworkHandler):
             image_shape = handler["ui_properties"].get("image_shape")
             if image_shape:
-                dim = handler["ui_properties"].get("dim", 2)
+                dim = handler["network_properties"].get("dim", None)
                 if dim == 2:
                     # 2D: width x height
                     data.append(["Size", f"{image_shape[1]} × {image_shape[0]}"])
@@ -220,7 +193,7 @@ class PropertiesWidget(QWidget):
             data.append(["Cutoff", f"{handler['ui_properties']['cutoff']}"])
 
         # Dimensions
-        dim = handler["ui_properties"].get("dim")
+        dim = handler["network_properties"].get("dim")
         if dim is not None:
             data.append(["Dimensions", f"{dim}D"])
         else:
@@ -241,19 +214,23 @@ class PropertiesWidget(QWidget):
         # Edge Count and Node Count
         if handler["network"] and hasattr(handler["network"], "graph"):
             graph = handler["network"].graph
-            data.append(["Edge Count", f"{graph.ecount()}"])
-            data.append(["Node Count", f"{graph.vcount()}"])
+            data.append(["Number of Edges", f"{graph.ecount()}"])
+            data.append(["Number of Nodes", f"{graph.vcount()}"])
+            data.append(
+                ["Weight Type", str(handler["network_properties"]["weight_type"])]
+            )
 
         # Network properties
         network_properties = handler["network_properties"]
         property_names = {
-            "diameter": "Diameter",
-            "density": "Density",
-            "average_clustering_coefficient": "Average Clustering Coeff.",
-            "assortativity": "Assortativity",
-            "average_closeness": "Average Closeness",
+            "diameter": "Network Diameter",
+            "density": "Graph Density",
+            "average_clustering_coefficient": "Average Clustering Coefficient",
+            "assortativity": "Assortativity Coefficient",
+            "average_closeness": "Average Closeness Centrality",
             "average_degree": "Average Degree",
             "nematic_order_parameter": "Nematic Order Parameter",
+            "average_betweenness_centrality": "Average Betweenness Centrality",
             "effective_resistance": "Effective Resistance",
         }
 

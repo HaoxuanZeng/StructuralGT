@@ -3,11 +3,13 @@
 import threading
 import time
 from pathlib import Path
-from typing import Optional, Any, List
-from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, Signal, QThread
+from typing import Any, List, Optional
+
+from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, QThread, Signal
+
 from model.handler import (
-    HandlerRegistry,
     Handler,
+    HandlerRegistry,
     NetworkHandler,
     PointNetworkHandler,
 )

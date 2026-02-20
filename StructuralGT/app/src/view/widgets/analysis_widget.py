@@ -1,17 +1,18 @@
 """Analysis widget for StructuralGT GUI."""
 
 import json
-from PySide6.QtCore import Qt, Signal, QTimer
+
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QCheckBox,
+    QComboBox,
     QHBoxLayout,
     QLabel,
-    QComboBox,
-    QSlider,
-    QCheckBox,
     QPushButton,
     QSizePolicy,
+    QSlider,
+    QVBoxLayout,
+    QWidget,
 )
 from service.main_controller import MainController
 from view.dialogs.file_dialog import export_file
@@ -34,6 +35,12 @@ class AnalysisWidget(QWidget):
         layout.addWidget(self.binarizer_widget, alignment=Qt.AlignTop)
         layout.addSpacing(10)
 
+        self.graph_extraction_widget = GraphExtractionWidget(
+            controller=controller, parent=self
+        )
+        layout.addWidget(self.graph_extraction_widget, alignment=Qt.AlignTop)
+        layout.addSpacing(10)
+
         self.compute_graph_properties_widget = ComputeGraphPropertiesWidget(
             controller=controller, parent=self
         )
@@ -51,7 +58,7 @@ class BinarizerWidget(QWidget):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(5)
 
         checkbox_layout = QVBoxLayout()
@@ -63,6 +70,7 @@ class BinarizerWidget(QWidget):
         button_layout.setSpacing(5)
 
         label = QLabel("Binarize Filter", self)
+        label.setStyleSheet("font-weight: bold;")
         label.setAlignment(Qt.AlignCenter)
 
         self.threshold_combo = QComboBox(self)
@@ -72,7 +80,7 @@ class BinarizerWidget(QWidget):
             "Gamma",
             initial=1.00,
             minimum=0.01,
-            maximum=10,
+            maximum=10.00,
             step=0.01,
             decimals=2,
             parent=self,
@@ -90,17 +98,17 @@ class BinarizerWidget(QWidget):
         self.threshold_slider = LabeledSlider(
             "Threshold",
             initial=128,
-            minimum=0,
-            maximum=256,
-            step=0.01,
-            decimals=2,
+            minimum=1,
+            maximum=255,
+            step=1,
+            decimals=0,
             parent=self,
         )
         self.adaptive_kernel_slider = LabeledSlider(
             "Adaptive Kernel",
             initial=1,
             minimum=1,
-            maximum=2000,
+            maximum=200,
             step=1,
             decimals=0,
             parent=self,
@@ -109,7 +117,7 @@ class BinarizerWidget(QWidget):
             "Blur Kernel",
             initial=0,
             minimum=0,
-            maximum=400,
+            maximum=200,
             step=1,
             decimals=0,
             parent=self,
@@ -232,6 +240,63 @@ class BinarizerWidget(QWidget):
         }
 
 
+class GraphExtractionWidget(QWidget):
+    """Graph Extraction widget for StructuralGT GUI."""
+
+    def __init__(self, controller: MainController, parent):
+        """Initialize the graph extraction widget."""
+        super().__init__(parent)
+        self.controller = controller
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(5)
+
+        weights_layout = QHBoxLayout()
+        weights_layout.setContentsMargins(5, 5, 5, 5)
+        weights_layout.setSpacing(5)
+        weights_layout.setAlignment(Qt.AlignLeft)
+
+        label = QLabel("Graph Extraction", self)
+        label.setStyleSheet("font-weight: bold;")
+        label.setAlignment(Qt.AlignCenter)
+
+        weight_type_label = QLabel("Weight Type:", self)
+
+        self.weights_combo = QComboBox(self)
+        self.weights_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.weights_combo.addItems(
+            [
+                "None",
+                "Length",
+                "Width",
+                "Area",
+                "InverseLength",
+                "FixedWidthConductance",
+                "VariableWidthConductance",
+                "Resistance",
+                "PerpBisector",
+            ]
+        )
+        self.weights_combo.setCurrentIndex(0)
+
+        self.extract_button = QPushButton("Extract Graph", self)
+        self.extract_button.clicked.connect(self._on_extract_graph)
+
+        weights_layout.addWidget(weight_type_label)
+        weights_layout.addWidget(self.weights_combo)
+
+        layout.addWidget(label)
+        layout.addLayout(weights_layout)
+        layout.addWidget(self.extract_button)
+
+    def _on_extract_graph(self):
+        weight_type = self.weights_combo.currentText()
+        weight_type = None if weight_type == "None" else [weight_type]
+        self.controller.extract_graph_from_selected_network(weight_type)
+
+
 class ComputeGraphPropertiesWidget(QWidget):
     """Graph Properties widget for StructuralGT GUI."""
 
@@ -254,6 +319,7 @@ class ComputeGraphPropertiesWidget(QWidget):
         button_layout.setSpacing(5)
 
         label = QLabel("Graph Properties", self)
+        label.setStyleSheet("font-weight: bold;")
         label.setAlignment(Qt.AlignCenter)
 
         self.diameter_checkbox = QCheckBox("Diameter", self)
@@ -267,9 +333,11 @@ class ComputeGraphPropertiesWidget(QWidget):
         )
         self.average_degree_checkbox = QCheckBox("Average Degree", self)
         self.nematic_order_checkbox = QCheckBox("Nematic Order Parameter", self)
+        self.average_betweenness_centrality_checkbox = QCheckBox(
+            "Average Betweenness Centrality", self
+        )
         self.effective_resistance_checkbox = QCheckBox("Effective Resistance", self)
 
-        self.extract_button = QPushButton("Extract Graph", self)
         self.compute_button = QPushButton("Compute", self)
 
         checkbox_layout.addWidget(self.diameter_checkbox)
@@ -279,20 +347,16 @@ class ComputeGraphPropertiesWidget(QWidget):
         checkbox_layout.addWidget(self.average_closeness_checkbox)
         checkbox_layout.addWidget(self.average_degree_checkbox)
         checkbox_layout.addWidget(self.nematic_order_checkbox)
+        checkbox_layout.addWidget(self.average_betweenness_centrality_checkbox)
         checkbox_layout.addWidget(self.effective_resistance_checkbox)
 
-        button_layout.addWidget(self.extract_button)
         button_layout.addWidget(self.compute_button)
 
         layout.addWidget(label)
         layout.addLayout(checkbox_layout)
         layout.addLayout(button_layout)
 
-        self.extract_button.clicked.connect(self._on_extract_graph)
         self.compute_button.clicked.connect(self._on_compute_graph_properties)
-
-    def _on_extract_graph(self):
-        self.controller.extract_graph_from_selected_network()
 
     def _on_compute_graph_properties(self):
         options = self._get_graph_properties_options()
@@ -303,13 +367,14 @@ class ComputeGraphPropertiesWidget(QWidget):
             "diameter": self.diameter_checkbox.isChecked(),
             "density": self.density_checkbox.isChecked(),
             "average_clustering_coefficient": (
-                self.average_clustering_checkbox.isChecked(),
+                self.average_clustering_checkbox.isChecked()
             ),
             "assortativity": self.assortativity_checkbox.isChecked(),
             "average_closeness": self.average_closeness_checkbox.isChecked(),
             "average_degree": self.average_degree_checkbox.isChecked(),
             "nematic_order_parameter": self.nematic_order_checkbox.isChecked(),
-            "effective_resistance": (self.effective_resistance_checkbox.isChecked(),),
+            "average_betweenness_centrality": self.average_betweenness_centrality_checkbox.isChecked(),
+            "effective_resistance": self.effective_resistance_checkbox.isChecked(),
         }
 
 

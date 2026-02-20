@@ -151,8 +151,6 @@ hiddenimports = [
     "gsd",
     "igraph",
     "freud",
-    "qdarktheme",
-    "pyqtdarktheme",
     # IPython (required by StructuralGT)
     "IPython",
     "IPython.display",

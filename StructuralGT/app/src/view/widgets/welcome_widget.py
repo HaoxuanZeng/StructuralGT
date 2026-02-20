@@ -2,15 +2,15 @@
 """Welcome page widget for StructuralGT GUI."""
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QHBoxLayout,
     QLabel,
     QPushButton,
-    QHBoxLayout,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtGui import QFont
-from view.dialogs.file_dialog import select_folder, select_file
+from view.dialogs.file_dialog import select_file, select_folder
 
 
 class WelcomePage(QWidget):

@@ -1,9 +1,11 @@
 """Thread-safe Handler for metadata and network objects."""
 
-import threading
-import pandas as pd
-from typing import Optional, Any, Dict
 import pathlib
+import threading
+from typing import Any, Dict, Optional
+
+import pandas as pd
+
 from StructuralGT.networks import Network, PointNetwork
 
 
@@ -47,7 +49,8 @@ class Handler(ThreadSafeDict):
             "extracted_loaded": False,
         }
         self["network_properties"] = {
-            "dim": None,  # 2 or 3
+            "dim": None,
+            "weight_type": None,
             "diameter": None,
             "density": None,
             "average_clustering_coefficient": None,
@@ -62,6 +65,16 @@ class Handler(ThreadSafeDict):
             "Extract Graph": None,
             "Compute Graph Properties": None,
         }
+        self["property_cache"] = {
+            "Size": None,
+            "Clustering": None,
+            "Assortativity": None,
+            "Closeness": None,
+            "Degree": None,
+            "Electronic": None,
+            "Nematic": None,
+            "NodeBetweenness": None,
+        }
 
 
 class NetworkHandler(Handler):
@@ -71,7 +84,6 @@ class NetworkHandler(Handler):
         """Initialize the network handler."""
         super().__init__(input_dir)
         self["network"] = Network(directory=input_dir, dim=dim)
-        self["ui_properties"]["dim"] = dim
         self["ui_properties"]["image_shape"] = self["network"].image.shape
         self["binarize_options"] = {
             "Thresh_method": 0,
@@ -89,6 +101,7 @@ class NetworkHandler(Handler):
             "wsize": 1,
             "thresh": 128.0,
         }
+        self["network_properties"]["dim"] = dim
 
 
 class PointNetworkHandler(Handler):
@@ -104,8 +117,8 @@ class PointNetworkHandler(Handler):
             filename=str(pathlib.Path(self["paths"]["input_dir"]).parent / "skel.gsd")
         )
         self["ui_properties"]["cutoff"] = cutoff
-        self["ui_properties"]["dim"] = 3
         self["ui_properties"]["extracted_loaded"] = True
+        self["network_properties"]["dim"] = 3
 
 
 class HandlerRegistry:

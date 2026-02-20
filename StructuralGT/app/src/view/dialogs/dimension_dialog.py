@@ -1,14 +1,14 @@
 """Dimension selection dialog for StructuralGT GUI."""
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QRadioButton,
     QPushButton,
+    QRadioButton,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt
 
 
 class DimensionDialog(QDialog):
@@ -53,7 +53,7 @@ class DimensionDialog(QDialog):
         )
         warning_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         warning_label.setWordWrap(True)
-        warning_label.setStyleSheet("color: #666; min-height: 30px;")
+        warning_label.setMinimumHeight(30)
         self.warning_label = warning_label
         layout.addWidget(warning_label)
 

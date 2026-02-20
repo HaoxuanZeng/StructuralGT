@@ -23,5 +23,3 @@ dependencies:
   - structuralgt
   - pip
   - pyinstaller
-  - pip:
-    - pyqtdarktheme

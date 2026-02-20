@@ -1,33 +1,36 @@
 """PySide6 Application for StructualGT."""
 
-from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QIcon
-from view.main_window import MainWindow
-from view.resources import get_app_icon_path
-from service.main_controller import MainController
-from service.ui_service import UIService
-from service.settings_service import SettingsService
-from model.handler import HandlerRegistry
 import sys
 from pathlib import Path
+
+from model.handler import HandlerRegistry
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication
+from service.main_controller import MainController
+from service.settings_service import SettingsService
+from view.main_window import MainWindow
+from view.resources import get_app_icon_path
 
 app_dir = Path(__file__).parent
 if str(app_dir) not in sys.path:
     sys.path.insert(0, str(app_dir))
 
 
+def load_stylesheet() -> str:
+    """Load custom stylesheet."""
+    style_file = Path(__file__).parent / "view" / "resources" / "style" / "custom_styles.qss"
+    if style_file.exists():
+        return style_file.read_text(encoding="utf-8")
+    return ""
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    # Load settings
-    settings_service = SettingsService()
-
-    custom_styles = UIService.get_custom_styles()
-    theme = settings_service.get("theme")
-    stylesheet = UIService.load_theme(theme=theme, custom_styles=custom_styles)
-    app.setStyleSheet(stylesheet)
+    app.setStyleSheet(load_stylesheet())
     app.setWindowIcon(QIcon(get_app_icon_path()))
 
+    settings_service = SettingsService()
     handler_registry = HandlerRegistry()
     controller = MainController(handler_registry)
     window = MainWindow(controller, settings_service=settings_service)

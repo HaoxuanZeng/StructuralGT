@@ -1,14 +1,14 @@
 # app/view/dialogs/about_dialog.py
 """About dialog for StructuralGT GUI."""
 
-from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QLabel,
-    QDialogButtonBox,
-)
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
+from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QVBoxLayout,
+)
 
 
 class AboutDialog(QDialog):
@@ -38,14 +38,14 @@ class AboutDialog(QDialog):
             "A software tool that allows graph theory analysis of nano-structures.<br/><br/>"  # noqa: E501
             "This is a modified version of StructuralGT initially proposed by Drew A. Vecchio.<br/>"  # noqa: E501
             "DOI: <a href='https://pubs.acs.org/doi/10.1021/acsnano.1c04711'>10.1021/acsnano.1c04711</a><br/>"  # noqa: E501
-            "Documentation: <a href='https://structuralgt.readthedocs.io'>structuralgt.readthedocs.io</a><br/><br/>"  # noqa: E501
+            "Documentation: <a href='https://structuralgt.readthedocs.io'>structuralgt.readthedocs.io</a><br/>"  # noqa: E501
+            "GitHub: <a href='https://github.com/compass-stc/StructuralGT'>github.com/compass-stc/StructuralGT</a><br/><br/>"  # noqa: E501
             "Contributors:<br/>"
             "1. Nicolas Kotov<br/>"
             "2. Dickson Owuor<br/>"
             "3. Alain Kadar<br/><br/>"
             "This version of GUI is developed by Haoxuan Zeng.<br/>"
-            "GitHub: <a href='https://github.com/compass-stc/StructuralGT'>github.com/compass-stc/StructuralGT</a><br/><br/>"  # noqa: E501
-            "Copyright (C) 2018-2025, The Regents of the University of Michigan.<br/>"  # noqa: E501
+            "Copyright (C) 2018-2026, The Regents of the University of Michigan.<br/>"  # noqa: E501
             "License: BSD 3-Clause License<br/>"
         )
         self.about_label.setText(about_text)

@@ -1,7 +1,8 @@
 """Table models for StructuralGT GUI."""
 
-from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from typing import Any, List
+
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
 
 
 class TableModel(QAbstractTableModel):

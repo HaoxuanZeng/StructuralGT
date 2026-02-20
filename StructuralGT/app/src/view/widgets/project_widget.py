@@ -1,22 +1,22 @@
 """Project widget for StructuralGT GUI."""
 
+from model.handler import HandlerRegistry, NetworkHandler, PointNetworkHandler
+from model.handler_list_model import HandlerListModel
+from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QDialog,
     QHBoxLayout,
     QLabel,
     QListWidget,
     QListWidgetItem,
-    QPushButton,
-    QDialog,
     QMenu,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, QSize, QPoint
-from model.handler import HandlerRegistry, NetworkHandler, PointNetworkHandler
-from model.handler_list_model import HandlerListModel
 from service.main_controller import MainController
 from view.dialogs.dimension_dialog import DimensionDialog
-from view.dialogs.file_dialog import select_folder, select_file
+from view.dialogs.file_dialog import select_file, select_folder
 
 
 class HandlerListItemWidget(QWidget):
@@ -59,11 +59,9 @@ class HandlerListItemWidget(QWidget):
         info_layout.setSpacing(2)
 
         name_label = QLabel(name or "Unknown")
-        name_label.setStyleSheet("font-weight: bold;")
         info_layout.addWidget(name_label)
 
         type_label = QLabel(f"Type: {handler_type or 'Unknown'}")
-        type_label.setStyleSheet("color: #666; font-size: 10px;")
         info_layout.addWidget(type_label)
 
         status_layout = QHBoxLayout()
@@ -131,7 +129,6 @@ class ProjectWidget(QWidget):
         button_layout.setSpacing(5)
 
         self.list_widget = QListWidget(self)
-        self.list_widget.setStyleSheet("background-color: transparent;")
         self.list_widget.itemClicked.connect(self._on_item_clicked)
         self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.list_widget.customContextMenuRequested.connect(self._on_context_menu)

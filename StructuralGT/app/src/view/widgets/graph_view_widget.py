@@ -1,10 +1,10 @@
 """Graph view widget for StructuralGT GUI."""
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QSizePolicy
 import pathlib
 from typing import Optional
 
 import ovito as ov
+from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 from service.main_controller import MainController
 
 

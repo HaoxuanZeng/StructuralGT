@@ -1,7 +1,8 @@
 """File dialog for StructuralGT GUI."""
 
-from PySide6.QtWidgets import QFileDialog
 from typing import Optional
+
+from PySide6.QtWidgets import QFileDialog
 
 
 def select_folder(parent=None) -> Optional[str]:
@@ -10,7 +11,6 @@ def select_folder(parent=None) -> Optional[str]:
     dialog.setFileMode(QFileDialog.FileMode.Directory)
     dialog.setOption(QFileDialog.Option.ShowDirsOnly)
     dialog.setOption(QFileDialog.Option.DontResolveSymlinks)
-    dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
 
     if dialog.exec():
         selected = dialog.selectedFiles()
@@ -25,7 +25,6 @@ def select_file(parent=None, file_filter: Optional[str] = None) -> Optional[str]
     dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
     if file_filter:
         dialog.setNameFilter(file_filter)
-    dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
 
     if dialog.exec():
         selected = dialog.selectedFiles()
@@ -40,7 +39,6 @@ def select_files(parent=None, file_filter: Optional[str] = None) -> list[str]:
     dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
     if file_filter:
         dialog.setNameFilter(file_filter)
-    dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
 
     if dialog.exec():
         return dialog.selectedFiles()
@@ -56,7 +54,6 @@ def export_file(
     """Open file export dialog and return selected file path."""
     dialog = QFileDialog(parent)
     dialog.setFileMode(QFileDialog.FileMode.AnyFile)
-    dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
     dialog.setLabelText(QFileDialog.DialogLabel.Accept, "Export")
 
     if default_dir:

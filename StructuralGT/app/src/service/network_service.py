@@ -1,5 +1,8 @@
 """Network service for StructuralGT GUI."""
 
+from model.handler import HandlerRegistry, NetworkHandler, PointNetworkHandler
+
+from StructuralGT.betweenness import NodeBetweenness
 from StructuralGT.electronic import Electronic
 from StructuralGT.geometric import Nematic
 from StructuralGT.structural import (
@@ -9,7 +12,6 @@ from StructuralGT.structural import (
     Degree,
     Size,
 )
-from model.handler import NetworkHandler, PointNetworkHandler, HandlerRegistry
 
 
 class NetworkService:
@@ -57,75 +59,79 @@ class NetworkService:
         handler = handler_registry.get_selected()
         if handler and isinstance(handler, NetworkHandler):
             handler["network"].img_to_skel()
-            handler["network"].set_graph()
+            handler["network"].set_graph(weight_type=weight_type)
             handler["ui_properties"]["extracted_loaded"] = True
+            handler["network_properties"]["weight_type"] = weight_type
         return
 
     @staticmethod
-    def compute_diameter_and_density(handler_registry: HandlerRegistry):
-        """Compute the diameter and density of the selected network."""
+    def compute_size(handler_registry: HandlerRegistry):
+        """Compute the size object of the selected network."""
         handler = handler_registry.get_selected()
         if handler:
             size = Size()
             size.compute(handler["network"])
-            return size.diameter, size.density
-        return None, None
+            return size
+        return None
 
     @staticmethod
-    def compute_average_clustering_coefficient(
-        handler_registry: HandlerRegistry,
-    ):
-        """Compute the average clustering coeff. of the selected network."""
+    def compute_clustering(handler_registry: HandlerRegistry):
+        """Compute the clustering object of the selected network."""
         handler = handler_registry.get_selected()
         if handler:
             clustering = Clustering()
             clustering.compute(handler["network"])
-            return clustering.average_clustering_coefficient
+            return clustering
         return None
 
     @staticmethod
     def compute_assortativity(handler_registry: HandlerRegistry):
-        """Compute the assortativity of the selected network."""
+        """Compute the assortativity object of the selected network."""
         handler = handler_registry.get_selected()
         if handler:
             assortativity = Assortativity()
             assortativity.compute(handler["network"])
-            return assortativity.assortativity
+            return assortativity
         return None
 
     @staticmethod
-    def compute_average_closeness(handler_registry: HandlerRegistry):
-        """Compute the average closeness of the selected network."""
+    def compute_closeness(handler_registry: HandlerRegistry):
+        """Compute the closeness object of the selected network."""
         handler = handler_registry.get_selected()
         if handler:
             closeness = Closeness()
             closeness.compute(handler["network"])
-            return closeness.average_closeness
+            return closeness
         return None
 
     @staticmethod
-    def compute_average_degree(handler_registry: HandlerRegistry):
-        """Compute the average degree of the selected network."""
+    def compute_degree(handler_registry: HandlerRegistry):
+        """Compute the degree object of the selected network."""
         handler = handler_registry.get_selected()
         if handler:
             degree = Degree()
             degree.compute(handler["network"])
-            return degree.average_degree
+            return degree
         return None
 
     @staticmethod
-    def compute_nematic_order_parameter(handler_registry: HandlerRegistry):
-        """Compute the nematic order parameter of the selected network."""
+    def compute_nematic(handler_registry: HandlerRegistry):
+        """Compute the nematic object of the selected network."""
         handler = handler_registry.get_selected()
         if handler:
             nematic = Nematic()
             nematic.compute(handler["network"])
-            return nematic.nematic_order_parameter
+            return nematic
         return None
 
     @staticmethod
-    def compute_effective_resistance(handler_registry: HandlerRegistry):
-        """Compute the effective resistance of the selected network."""
+    def compute_betweenness_centrality(handler_registry: HandlerRegistry):
+        """Compute the nodebetweenness object of the selected network."""
+        handler = handler_registry.get_selected()
+        if handler:
+            betweenness = NodeBetweenness()
+            betweenness.compute(handler["network"])
+            return betweenness
         return None
 
     @staticmethod
@@ -138,43 +144,180 @@ class NetworkService:
         if handler is not None:
             graph_properties = handler["network_properties"].copy()
             if options["diameter"] or options["density"]:
-                diameter, density = NetworkService.compute_diameter_and_density(
-                    handler_registry
-                )
-                if options["diameter"]:
-                    graph_properties["diameter"] = diameter
-                if options["density"]:
-                    graph_properties["density"] = density
-            if options["average_clustering_coefficient"]:
-                average_clustering_coefficient = (
-                    NetworkService.compute_average_clustering_coefficient(
+                if handler["property_cache"]["Size"] is None:
+                    handler["property_cache"]["Size"] = NetworkService.compute_size(
                         handler_registry
                     )
-                )
-                graph_properties["average_clustering_coefficient"] = (
-                    average_clustering_coefficient
-                )
+                if options["diameter"]:
+                    graph_properties["diameter"] = handler["property_cache"][
+                        "Size"
+                    ].diameter
+                if options["density"]:
+                    graph_properties["density"] = handler["property_cache"][
+                        "Size"
+                    ].density
+            if options["average_clustering_coefficient"]:
+                if handler["property_cache"]["Clustering"] is None:
+                    handler["property_cache"]["Clustering"] = (
+                        NetworkService.compute_clustering(handler_registry)
+                    )
+                graph_properties["average_clustering_coefficient"] = handler[
+                    "property_cache"
+                ]["Clustering"].average_clustering_coefficient
             if options["assortativity"]:
-                assortativity = NetworkService.compute_assortativity(handler_registry)
-                graph_properties["assortativity"] = assortativity
+                if handler["property_cache"]["Assortativity"] is None:
+                    handler["property_cache"]["Assortativity"] = (
+                        NetworkService.compute_assortativity(handler_registry)
+                    )
+                graph_properties["assortativity"] = handler["property_cache"][
+                    "Assortativity"
+                ].assortativity
             if options["average_closeness"]:
-                average_closeness = NetworkService.compute_average_closeness(
-                    handler_registry
-                )
-                graph_properties["average_closeness"] = average_closeness
+                if handler["property_cache"]["Closeness"] is None:
+                    handler["property_cache"]["Closeness"] = (
+                        NetworkService.compute_closeness(handler_registry)
+                    )
+                graph_properties["average_closeness"] = handler["property_cache"][
+                    "Closeness"
+                ].average_closeness
             if options["average_degree"]:
-                average_degree = NetworkService.compute_average_degree(handler_registry)
-                graph_properties["average_degree"] = average_degree
+                if handler["property_cache"]["Degree"] is None:
+                    handler["property_cache"]["Degree"] = NetworkService.compute_degree(
+                        handler_registry
+                    )
+                graph_properties["average_degree"] = handler["property_cache"][
+                    "Degree"
+                ].average_degree
             if options["nematic_order_parameter"]:
-                nematic_order_parameter = (
-                    NetworkService.compute_nematic_order_parameter(handler_registry)
-                )
-                graph_properties["nematic_order_parameter"] = nematic_order_parameter
+                if handler["property_cache"]["Nematic"] is None:
+                    handler["property_cache"]["Nematic"] = (
+                        NetworkService.compute_nematic(handler_registry)
+                    )
+                graph_properties["nematic_order_parameter"] = handler["property_cache"][
+                    "Nematic"
+                ].nematic_order_parameter
+            if options["average_betweenness_centrality"]:
+                if handler["property_cache"]["NodeBetweenness"] is None:
+                    handler["property_cache"]["NodeBetweenness"] = (
+                        NetworkService.compute_betweenness_centrality(handler_registry)
+                    )
+                graph_properties["average_betweenness_centrality"] = handler[
+                    "property_cache"
+                ]["NodeBetweenness"].average_node_betweenness
             if options["effective_resistance"]:
-                effective_resistance = NetworkService.compute_effective_resistance(
-                    handler_registry
-                )
-                graph_properties["effective_resistance"] = effective_resistance
+                pass
             handler["network_properties"] = graph_properties
             return True
         return False
+
+    @staticmethod
+    def plot_skeleton(handler_registry: HandlerRegistry, ax):
+        """Plot the skeleton of the selected network."""
+        handler = handler_registry.get_selected()
+        if handler is None or not isinstance(handler, NetworkHandler):
+            return
+        if handler["network_properties"].get("dim") != 2:
+            return
+        ax.imshow(handler["network"].skeleton, cmap="gray")
+        ax.axis("off")
+        ax.figure.tight_layout()
+
+    @staticmethod
+    def plot_graph(handler_registry: HandlerRegistry, ax):
+        """Plot the graph of the selected network."""
+        handler = handler_registry.get_selected()
+        if handler is None or not isinstance(handler, NetworkHandler):
+            return
+        if handler["network_properties"].get("dim") != 2:
+            return
+        handler["network"].graph_plot(ax=ax)
+        ax.figure.tight_layout()
+
+    @staticmethod
+    def plot_degree_heatmap(handler_registry: HandlerRegistry, ax):
+        """Plot the degree heatmap of the selected network."""
+        handler = handler_registry.get_selected()
+        if handler is None or not isinstance(handler, NetworkHandler):
+            return
+        if handler["network_properties"].get("dim") != 2:
+            return
+        degree = handler["property_cache"]["Degree"]
+        ax.set_title("Degree Heatmap", fontsize=10)
+        handler["network"].node_plot(parameter=degree.degree, ax=ax)
+        ax.figure.tight_layout()
+
+    @staticmethod
+    def plot_betweenness_centrality_heatmap(handler_registry: HandlerRegistry, ax):
+        """Plot the betweenness centrality heatmap of the selected network."""
+        handler = handler_registry.get_selected()
+        if handler is None or not isinstance(handler, NetworkHandler):
+            return
+        if handler["network_properties"].get("dim") != 2:
+            return
+        betweenness = handler["property_cache"]["NodeBetweenness"]
+        ax.set_title("Betweenness Centrality Heatmap", fontsize=10)
+        handler["network"].node_plot(parameter=betweenness.node_betweenness, ax=ax)
+        ax.figure.tight_layout()
+
+    @staticmethod
+    def plot_closeness_centrality_heatmap(handler_registry: HandlerRegistry, ax):
+        """Plot the closeness centrality heatmap of the selected network."""
+        handler = handler_registry.get_selected()
+        if handler is None or not isinstance(handler, NetworkHandler):
+            return
+        if handler["network_properties"].get("dim") != 2:
+            return
+        closeness = handler["property_cache"]["Closeness"]
+        ax.set_title("Closeness Centrality Heatmap", fontsize=10)
+        handler["network"].node_plot(parameter=closeness.closeness, ax=ax)
+        ax.figure.tight_layout()
+
+    @staticmethod
+    def plot_degree_distribution(handler_registry: HandlerRegistry, ax):
+        """Plot the degree distribution of the selected network."""
+        handler = handler_registry.get_selected()
+        if handler is None or not isinstance(handler, NetworkHandler):
+            return
+        if handler["network_properties"].get("dim") != 2:
+            return
+        degree = handler["property_cache"]["Degree"]
+        ax.set_title("Degree Distribution", fontsize=10)
+        ax.hist(degree.degree, density=False, edgecolor="white", linewidth=0.5)
+        ax.set_xlabel("Degree value")
+        ax.set_ylabel("Count")
+        ax.figure.tight_layout()
+
+    @staticmethod
+    def plot_betweenness_centrality_distribution(handler_registry: HandlerRegistry, ax):
+        """Plot the betweenness centrality distribution of the selected network."""
+        handler = handler_registry.get_selected()
+        if handler is None or not isinstance(handler, NetworkHandler):
+            return
+        if handler["network_properties"].get("dim") != 2:
+            return
+        betweenness = handler["property_cache"]["NodeBetweenness"]
+        ax.set_title("Betweenness Centrality Distribution", fontsize=10)
+        ax.hist(
+            betweenness.node_betweenness,
+            density=False,
+            edgecolor="white",
+            linewidth=0.5,
+        )
+        ax.set_xlabel("Betweenness value")
+        ax.set_ylabel("Count")
+        ax.figure.tight_layout()
+
+    @staticmethod
+    def plot_closeness_centrality_distribution(handler_registry: HandlerRegistry, ax):
+        """Plot the closeness centrality distribution of the selected network."""
+        handler = handler_registry.get_selected()
+        if handler is None or not isinstance(handler, NetworkHandler):
+            return
+        if handler["network_properties"].get("dim") != 2:
+            return
+        closeness = handler["property_cache"]["Closeness"]
+        ax.set_title("Closeness Centrality Distribution", fontsize=10)
+        ax.hist(closeness.closeness, density=False, edgecolor="white", linewidth=0.5)
+        ax.set_xlabel("Closeness value")
+        ax.set_ylabel("Count")
+        ax.figure.tight_layout()

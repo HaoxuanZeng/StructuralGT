@@ -1,19 +1,20 @@
 """Console widget for displaying stdout and stderr output."""
 
+import logging
 import sys
 from io import StringIO
-import logging
+
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import QColor, QTextCursor
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QTextEdit,
-    QHBoxLayout,
-    QPushButton,
-    QLabel,
     QApplication,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Signal, QObject
-from PySide6.QtGui import QTextCursor, QColor
 
 
 class OutputStream(QObject):
@@ -74,22 +75,10 @@ class ConsoleWidget(QWidget):
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(5, 0, 5, 0)
 
-        title_label = QLabel("Console")
+        title_label = QLabel("Log")
         title_label.setStyleSheet("font-weight: bold;")
         header_layout.addWidget(title_label)
         header_layout.addStretch()
-
-        copy_button = QPushButton("Copy")
-        copy_button.setFixedHeight(24)
-        copy_button.clicked.connect(self._on_copy)
-        header_layout.addWidget(copy_button)
-
-        close_button = QPushButton("×")
-        close_button.setFixedWidth(30)
-        close_button.setFixedHeight(24)
-        close_button.setStyleSheet("font-size: 18px; font-weight: bold;")
-        close_button.clicked.connect(self.hide)
-        header_layout.addWidget(close_button)
 
         layout.addLayout(header_layout)
 
@@ -101,31 +90,6 @@ class ConsoleWidget(QWidget):
 
         self._setup_output_redirection()
         self._setup_logging_redirection()
-
-        self._theme = self.parent().settings_service.get("theme")
-        self.refresh_ui(self._theme)
-
-    def refresh_ui(self, theme: str):
-        """Refresh the UI of the console widget."""
-        self._theme = theme
-        if theme == "dark":
-            self.text_edit.setStyleSheet(
-                "QTextEdit {"
-                "background-color: #1e1e1e;"
-                "color: #d4d4d4;"
-                "border: 1px solid #3e3e3e;"
-                "border-radius: 4px;"
-                "}"
-            )
-        else:
-            self.text_edit.setStyleSheet(
-                "QTextEdit {"
-                "background-color: #ffffff;"
-                "color: #000000;"
-                "border: 1px solid #3e3e3e;"
-                "border-radius: 4px;"
-                "}"
-            )
 
     def _setup_output_redirection(self):
         self._stdout_stream = OutputStream(self)
@@ -149,19 +113,12 @@ class ConsoleWidget(QWidget):
         root.addHandler(self._logging_handler)
 
     def _append_stdout(self, text: str):
-        """Append stdout text with theme-appropriate color."""
-        if self._theme == "dark":
-            color = QColor("#d4d4d4")
-        else:
-            color = QColor("#000000")
-        self._append_text(text, color)
+        """Append stdout text."""
+        self._append_text(text, None)
 
     def _append_stderr(self, text: str):
-        """Append stderr text with theme-appropriate color."""
-        if self._theme == "dark":
-            color = QColor("#f48771")
-        else:
-            color = QColor("#cc0000")
+        """Append stderr text in red."""
+        color = QColor("#cc0000")
         self._append_text(text, color)
 
     def _append_text(self, text: str, color: QColor):
@@ -177,12 +134,6 @@ class ConsoleWidget(QWidget):
 
         self.text_edit.setTextCursor(cursor)
         self.text_edit.ensureCursorVisible()
-
-    def _on_copy(self):
-        text = self.text_edit.toPlainText()
-        if text:
-            clipboard = QApplication.clipboard()
-            clipboard.setText(text)
 
     def showEvent(self, event):
         """Show the console widget."""

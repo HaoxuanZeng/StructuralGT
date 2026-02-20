@@ -1,40 +1,39 @@
 """Main window for StructuralGT GUI."""
 
-from StructuralGT import __version__
-from view.resources import get_icon_path
-from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QGridLayout,
-    QSplitter,
-    QTabWidget,
-    QVBoxLayout,
-    QMenuBar,
-    QStatusBar,
-    QLabel,
-    QToolButton,
-    QDialog,
-    QApplication,
-    QScrollArea,
-)
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QShortcut, QKeySequence
-from view.widgets.welcome_widget import WelcomePage
-from view.widgets.image_view_widget import ImageViewWidget
-from view.widgets.graph_view_widget import GraphViewWidget
-from view.widgets.ribbon_widget import RibbonBar
-from view.widgets.analysis_widget import AnalysisWidget
-from view.widgets.properties_widget import PropertiesWidget
-from view.widgets.project_widget import ProjectWidget
+from PySide6.QtGui import QIcon, QKeySequence, QShortcut
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QGridLayout,
+    QLabel,
+    QMainWindow,
+    QMenuBar,
+    QScrollArea,
+    QSplitter,
+    QStatusBar,
+    QTabWidget,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
+from service.main_controller import MainController
+from service.settings_service import SettingsService
+
+from StructuralGT import __version__
 from view.dialogs.about_dialog import AboutDialog
 from view.dialogs.alert_dialog import show_alert
 from view.dialogs.settings_dialog import SettingsDialog
+from view.plot_window import PlotWindow
+from view.resources import get_icon_path
+from view.widgets.analysis_widget import AnalysisWidget
 from view.widgets.console_widget import ConsoleWidget
-from view.monitor_window import MonitorWindow
-from service.main_controller import MainController
-from service.settings_service import SettingsService
-from service.ui_service import UIService
-from model.handler import HandlerRegistry
+from view.widgets.graph_view_widget import GraphViewWidget
+from view.widgets.image_view_widget import ImageViewWidget
+from view.widgets.project_widget import ProjectWidget
+from view.widgets.properties_widget import PropertiesWidget
+from view.widgets.ribbon_widget import RibbonBar
+from view.widgets.welcome_widget import WelcomePage
 
 
 class MainWindow(QMainWindow):
@@ -46,8 +45,8 @@ class MainWindow(QMainWindow):
         self.controller = controller
         self.settings_service = settings_service
         self.setWindowTitle("StructuralGT")
-        self.setGeometry(100, 100, 1080, 800)
-        self.setMinimumSize(800, 600)
+        self.setGeometry(100, 100, 1200, 800)
+        self.setMinimumSize(900, 600)
 
         # Menu Bar
         self.menu_bar = MenuBar(self)
@@ -77,7 +76,7 @@ class MainWindow(QMainWindow):
         splitter = QSplitter(Qt.Horizontal, central_widget)
         splitter.addWidget(self.left_panel)
         splitter.addWidget(self.right_panel)
-        splitter.setSizes([300, 780])
+        splitter.setSizes([400, 800])
 
         top_layout.addWidget(self.ribbon_widget, 0, 0, 1, 2)
         top_layout.addWidget(splitter, 1, 0, 1, 2)
@@ -87,8 +86,8 @@ class MainWindow(QMainWindow):
         self.console_widget.setMaximumHeight(300)
         self.console_widget.setMinimumHeight(150)
 
-        # Monitor window
-        self.monitor_window = MonitorWindow(self.controller, self)
+        # Plot window
+        self.plot_window = PlotWindow(self.controller, self)
 
         # Add to main layout
         top_widget = QWidget()
@@ -101,20 +100,7 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
 
         self._connect_signals()
-
-        # Apply initial theme
-        self._apply_theme()
-
-        # Bind shortcuts
         self._bind_shortcuts()
-
-    def _apply_theme(self):
-        custom_styles = UIService.get_custom_styles()
-        theme = self.settings_service.get("theme")
-        stylesheet = UIService.load_theme(theme=theme, custom_styles=custom_styles)
-        QApplication.instance().setStyleSheet(stylesheet)
-        # Refresh icons after theme change
-        self._refresh_all_ui(theme)
 
     def _bind_shortcuts(self):
         """Bind shortcuts to the application."""
@@ -153,13 +139,6 @@ class MainWindow(QMainWindow):
             lambda: self.left_panel.tabs.setCurrentIndex(2)
         )
 
-    def _refresh_all_ui(self, theme: str):
-        """Refresh all UI elements in the application based on theme."""
-        self.ribbon_widget.refresh_ui(theme)
-        self.right_panel.image_view.refresh_ui(theme)
-        self.status_bar.refresh_ui(theme)
-        self.console_widget.refresh_ui(theme)
-
     def _connect_signals(self):
         # UI Signals
         self.ribbon_widget.toggle_panel_signal.connect(self._on_toggle_left_panel)
@@ -177,6 +156,9 @@ class MainWindow(QMainWindow):
         self.controller.alert_signal.connect(self._on_alert)
         self.controller.handler_changed_signal.connect(
             self.left_panel.project_widget.refresh
+        )
+        self.controller.handler_changed_signal.connect(
+            self.plot_window.plot_view.refresh
         )
         self.controller.handler_changed_signal.connect(
             self.right_panel.image_view.refresh
@@ -201,14 +183,12 @@ class MainWindow(QMainWindow):
             self.right_panel.graph_view.hide()
             self.right_panel.graph_view.clear()
             self.ribbon_widget.refresh_button.setDisabled(True)
-            self.ribbon_widget.extract_graph_button.setDisabled(True)
             self.ribbon_widget.combo_box.setDisabled(True)
         elif view_name == "Raw Image" or view_name == "Binarized Image":
             self.right_panel.image_view.show()
             self.right_panel.graph_view.hide()
             self.right_panel.welcome_page.hide()
             self.ribbon_widget.refresh_button.setDisabled(False)
-            self.ribbon_widget.extract_graph_button.setDisabled(False)
             self.ribbon_widget.combo_box.setDisabled(False)
             if self.ribbon_widget.combo_box.currentText() != view_name:
                 self.ribbon_widget.combo_box.setCurrentText(view_name)
@@ -218,7 +198,6 @@ class MainWindow(QMainWindow):
             self.right_panel.image_view.hide()
             self.right_panel.welcome_page.hide()
             self.ribbon_widget.refresh_button.setDisabled(False)
-            self.ribbon_widget.extract_graph_button.setDisabled(False)
             self.ribbon_widget.combo_box.setDisabled(False)
             if self.ribbon_widget.combo_box.currentText() != view_name:
                 self.ribbon_widget.combo_box.setCurrentText(view_name)
@@ -227,7 +206,6 @@ class MainWindow(QMainWindow):
             self.right_panel.image_view.hide()
             self.right_panel.welcome_page.hide()
             self.ribbon_widget.refresh_button.setDisabled(False)
-            self.ribbon_widget.extract_graph_button.setDisabled(False)
             self.ribbon_widget.combo_box.setCurrentText("Extracted Graph")
             self.ribbon_widget.combo_box.setDisabled(True)
 
@@ -237,17 +215,15 @@ class MainWindow(QMainWindow):
 
     def _on_binarize_finished(self, success: bool):
         """Handle binarize task completion."""
-        if success:
-            # Refresh image view if showing binarized image
-            if self.right_panel.image_view.isVisible():
-                handler = self.controller.get_selected_handler()
-                if handler and handler["ui_properties"]["display_type"] == "Raw Image":
-                    self._on_change_view("Binarized Image")
-                if (
-                    handler
-                    and handler["ui_properties"]["display_type"] == "Binarized Image"
-                ):
-                    self.right_panel.image_view.refresh()
+        if success and self.right_panel.image_view.isVisible():
+            handler = self.controller.get_selected_handler()
+            if handler and handler["ui_properties"]["display_type"] == "Raw Image":
+                self._on_change_view("Binarized Image")
+            if (
+                handler
+                and handler["ui_properties"]["display_type"] == "Binarized Image"
+            ):
+                self.right_panel.image_view.refresh()
 
     def _on_extract_graph_finished(self, pipeline):
         """Handle extract graph task completion."""
@@ -272,6 +248,8 @@ class MainWindow(QMainWindow):
             self.right_panel.image_view.refresh()
         elif self.right_panel.graph_view.isVisible():
             self.right_panel.graph_view.refresh()
+        # Refresh plot window
+        self.plot_window.plot_view.refresh()
 
 
 class LeftPanel(QWidget):
@@ -280,7 +258,7 @@ class LeftPanel(QWidget):
     def __init__(self, controller: MainController, main_window: MainWindow):
         """Initialize the left panel."""
         super().__init__()
-        self.setMinimumWidth(200)
+        self.setMinimumWidth(300)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -320,7 +298,7 @@ class RightPanel(QWidget):
         layout.setSpacing(0)
 
         self.welcome_page = WelcomePage(self)
-        self.image_view = ImageViewWidget(controller, main_window, self)
+        self.image_view = ImageViewWidget(self, controller, main_window)
         self.graph_view = GraphViewWidget(self, controller)
         layout.addWidget(self.welcome_page, 0, 0, Qt.AlignCenter)
         layout.addWidget(self.image_view, 0, 0)
@@ -357,50 +335,39 @@ class StatusBar(QStatusBar):
         self.setFixedHeight(30)
         self.setContentsMargins(5, 0, 5, 0)
 
-        theme = self.main_window.settings_service.get("theme")
         self.settings_button = QToolButton()
-        self.settings_button.setIcon(QIcon(get_icon_path("settings.png", theme)))
+        self.settings_button.setIcon(QIcon(get_icon_path("settings.png")))
         self.settings_button.setToolTip("Settings")
-        self.settings_button.setStyleSheet("background-color: transparent;")
         self.settings_button.clicked.connect(self._on_settings_clicked)
 
         self.console_button = QToolButton()
-        self.console_button.setIcon(QIcon(get_icon_path("console.png", theme)))
+        self.console_button.setIcon(QIcon(get_icon_path("console.png")))
         self.console_button.setToolTip("Console")
-        self.console_button.setStyleSheet("background-color: transparent;")
         self.console_button.clicked.connect(self._on_console_clicked)
 
-        self.monitor_button = QToolButton()
-        self.monitor_button.setIcon(QIcon(get_icon_path("monitor.png", theme)))
-        self.monitor_button.setToolTip("Monitor")
-        self.monitor_button.setStyleSheet("background-color: transparent;")
-        self.monitor_button.clicked.connect(self._on_monitor_clicked)
+        self.plot_button = QToolButton()
+        self.plot_button.setIcon(QIcon(get_icon_path("plot.png")))
+        self.plot_button.setToolTip("Plot")
+        self.plot_button.clicked.connect(self._on_plot_clicked)
 
         self.addWidget(self.settings_button)
         self.addWidget(self.console_button)
-        self.addWidget(self.monitor_button)
+        self.addWidget(self.plot_button)
         version_label = QLabel(f"StructuralGT v{__version__}")
         self.addPermanentWidget(version_label)
-
-    def refresh_ui(self, theme: str):
-        """Refresh the UI of the status bar."""
-        self.settings_button.setIcon(QIcon(get_icon_path("settings.png", theme)))
-        self.console_button.setIcon(QIcon(get_icon_path("console.png", theme)))
-        self.monitor_button.setIcon(QIcon(get_icon_path("monitor.png", theme)))
 
     def _on_settings_clicked(self):
         dialog = SettingsDialog(
             settings_service=self.main_window.settings_service, parent=self
         )
-        if dialog.exec() == QDialog.Accepted:
-            self.main_window._apply_theme()
+        dialog.exec()
 
     def _on_console_clicked(self):
         if self.main_window:
             console = self.main_window.console_widget
             console.setVisible(not console.isVisible())
 
-    def _on_monitor_clicked(self):
+    def _on_plot_clicked(self):
         if self.main_window:
-            monitor = self.main_window.monitor_window
-            monitor.setVisible(not monitor.isVisible())
+            plot = self.main_window.plot_window
+            plot.setVisible(not plot.isVisible())

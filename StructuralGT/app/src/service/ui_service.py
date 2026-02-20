@@ -1,11 +1,11 @@
 """UI service for StructuralGT GUI."""
 
-import cv2
 import pathlib
-import numpy as np
 from pathlib import Path
-import qdarktheme
 from typing import Optional
+
+import cv2
+import numpy as np
 from model.handler import HandlerRegistry, NetworkHandler, PointNetworkHandler
 
 
@@ -34,7 +34,7 @@ class UIService:
         handler = handler_registry.get_selected()
         image = None
         if handler and isinstance(handler, NetworkHandler):
-            dim = handler["ui_properties"]["dim"]
+            dim = handler["network_properties"].get("dim", None)
             if dim == 2:
                 image = handler["network"].image
             elif dim == 3:
@@ -50,7 +50,7 @@ class UIService:
         image = None
         if handler and isinstance(handler, NetworkHandler):
             input_dir = handler["paths"]["input_dir"]
-            dim = handler["ui_properties"]["dim"]
+            dim = handler["network_properties"].get("dim", None)
             index = (
                 index + 1 if dim == 3 else index
             )  # FIXME: This is restricted by StructuralGT library
@@ -73,37 +73,3 @@ class UIService:
             elif isinstance(handler, PointNetworkHandler):
                 gsd_file = pathlib.Path(input_dir).parent / "skel.gsd"
         return str(gsd_file)
-
-    @staticmethod
-    def load_theme(theme: str, custom_styles: str) -> str:
-        """Load theme stylesheet with custom styles."""
-        base_stylesheet = qdarktheme.load_stylesheet(theme=theme)
-        combined = base_stylesheet + "\n" + UIService.get_custom_styles()
-        return combined
-
-    @staticmethod
-    def get_custom_styles() -> str:
-        """Get the custom styles from file system."""
-        import sys
-
-        # PyInstaller environment
-        if hasattr(sys, "_MEIPASS"):
-            base_path = pathlib.Path(sys._MEIPASS)
-            style_file = (
-                base_path / "app" / "view" / "resources" / "style" / "custom_styles.qss"
-            )
-        # Normal environment
-        else:
-            style_file = (
-                pathlib.Path(__file__).parent.parent
-                / "view"
-                / "resources"
-                / "style"
-                / "custom_styles.qss"
-            )
-
-        if style_file.exists():
-            content = style_file.read_text(encoding="utf-8")
-            return content
-        else:
-            return ""
