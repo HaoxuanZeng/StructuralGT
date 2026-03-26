@@ -2,6 +2,7 @@
 
 import json
 
+from controller.app_controller import AppController
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -14,14 +15,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from service.main_controller import MainController
 from view.dialogs.file_dialog import export_file
 
 
 class AnalysisWidget(QWidget):
     """Analysis widget for StructuralGT GUI."""
 
-    def __init__(self, controller: MainController, parent):
+    def __init__(self, controller: AppController, parent):
         """Initialize the analysis widget."""
         super().__init__(parent)
         self.controller = controller
@@ -51,7 +51,7 @@ class AnalysisWidget(QWidget):
 class BinarizerWidget(QWidget):
     """Binarizer widget for StructuralGT GUI."""
 
-    def __init__(self, controller: MainController, parent):
+    def __init__(self, controller: AppController, parent):
         """Initialize the binarizer widget."""
         super().__init__(parent)
         self.controller = controller
@@ -243,7 +243,7 @@ class BinarizerWidget(QWidget):
 class GraphExtractionWidget(QWidget):
     """Graph Extraction widget for StructuralGT GUI."""
 
-    def __init__(self, controller: MainController, parent):
+    def __init__(self, controller: AppController, parent):
         """Initialize the graph extraction widget."""
         super().__init__(parent)
         self.controller = controller
@@ -300,7 +300,7 @@ class GraphExtractionWidget(QWidget):
 class ComputeGraphPropertiesWidget(QWidget):
     """Graph Properties widget for StructuralGT GUI."""
 
-    def __init__(self, controller: MainController, parent):
+    def __init__(self, controller: AppController, parent):
         """Initialize the graph properties widget."""
         super().__init__(parent)
         self.controller = controller

@@ -1,17 +1,16 @@
 """Graph view widget for StructuralGT GUI."""
 
 import pathlib
-from typing import Optional
 
 import ovito as ov
+from controller.app_controller import AppController
 from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
-from service.main_controller import MainController
 
 
 class GraphViewWidget(QWidget):
     """Graph view widget for StructuralGT GUI."""
 
-    def __init__(self, parent, controller: Optional[MainController] = None):
+    def __init__(self, parent, controller: AppController | None = None):
         """Initialize the graph view widget."""
         super().__init__(parent)
         self.controller = controller

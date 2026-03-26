@@ -3,10 +3,10 @@
 import sys
 from pathlib import Path
 
+from controller.app_controller import AppController
 from model.handler import HandlerRegistry
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
-from service.main_controller import MainController
 from service.settings_service import SettingsService
 from view.main_window import MainWindow
 from view.resources import get_app_icon_path
@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     settings_service = SettingsService()
     handler_registry = HandlerRegistry()
-    controller = MainController(handler_registry)
+    controller = AppController(handler_registry)
     window = MainWindow(controller, settings_service=settings_service)
     window.show()
 

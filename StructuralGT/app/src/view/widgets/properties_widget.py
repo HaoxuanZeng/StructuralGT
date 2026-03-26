@@ -1,9 +1,9 @@
 """Properties widget for StructuralGT GUI."""
 
 import pathlib
-from ctypes import alignment
 
 import pandas as pd
+from controller.app_controller import AppController
 from model.handler import NetworkHandler, PointNetworkHandler
 from model.table_model import TableModel
 from PySide6.QtCore import Qt
@@ -15,14 +15,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from service.main_controller import MainController
 from view.dialogs.file_dialog import export_file
 
 
 class PropertiesWidget(QWidget):
     """Properties widget for StructuralGT GUI."""
 
-    def __init__(self, controller: MainController, parent):
+    def __init__(self, controller: AppController, parent):
         """Initialize the properties widget."""
         super().__init__(parent)
         self.controller = controller

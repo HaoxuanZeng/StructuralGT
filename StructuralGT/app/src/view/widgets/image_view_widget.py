@@ -2,6 +2,7 @@
 
 import cv2
 import numpy as np
+from controller.app_controller import AppController
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor, QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
@@ -14,14 +15,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from service.main_controller import MainController
 from view.resources import get_icon_path
 
 
 class ImageViewWidget(QWidget):
     """Image view widget for StructuralGT GUI."""
 
-    def __init__(self, parent, controller: MainController, main_window):
+    def __init__(self, parent, controller: AppController, main_window):
         """Initialize the image view widget."""
         super().__init__(parent)
         self.controller = controller

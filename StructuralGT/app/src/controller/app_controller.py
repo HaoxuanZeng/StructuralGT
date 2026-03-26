@@ -3,61 +3,20 @@
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Callable, Optional
 
 import numpy as np
 from model.handler import HandlerRegistry, NetworkHandler, PointNetworkHandler
 from model.task_list_model import Task
-from PySide6.QtCore import QObject, QThread, Signal
-
+from PySide6.QtCore import QObject, Signal
 from service.network_service import NetworkService
 from service.ui_service import UIService
+
+from controller.worker import Worker
 
 logger = logging.getLogger(__name__)
 
 
-class Worker(QThread):
-    """Worker thread for StructuralGT GUI."""
-
-    def __init__(
-        self,
-        func: Callable,
-        callback: Optional[Callable] = None,
-        task: Optional[Task] = None,
-        *args: Any,
-        **kwargs: Any,
-    ):
-        """Initialize the worker."""
-        super().__init__()
-        self.func = func
-        self.callback = callback
-        self.task = task
-        self.args = args
-        self.kwargs = kwargs
-
-    def run(self):
-        """Run the worker."""
-        try:
-            if self.task:
-                logger.info(
-                    f"Task {self.task.task_id} started at "
-                    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                )
-
-                result = self.func(*self.args, **self.kwargs)
-
-                if self.callback:
-                    self.callback(result)
-                    logger.info(
-                        f"Task {self.task.task_id} completed at "
-                        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                    )
-        except Exception as e:
-            if self.callback:
-                self.callback(None, e)
-
-
-class MainController(QObject):
+class AppController(QObject):
     """Main controller for StructuralGT GUI."""
 
     change_view_signal = Signal(str)
@@ -148,7 +107,7 @@ class MainController(QObject):
         self.handler_changed_signal.emit()
         return
 
-    def get_selected_slice_raw_image(self, index: int) -> Optional[np.ndarray]:
+    def get_selected_slice_raw_image(self, index: int) -> np.ndarray | None:
         """Get the selected slice raw image from the selected handler."""
         try:
             image = UIService.get_selected_slice_raw_image(self.handler_registry, index)
@@ -157,7 +116,7 @@ class MainController(QObject):
             return None
         return image
 
-    def get_selected_slice_binarized_image(self, index: int) -> Optional[np.ndarray]:
+    def get_selected_slice_binarized_image(self, index: int) -> np.ndarray | None:
         """Get the selected slice binarized image from the selected handler."""
         try:
             image = UIService.get_selected_slice_binarized_image(
@@ -170,7 +129,7 @@ class MainController(QObject):
             return None
         return image
 
-    def get_selected_extracted_graph(self) -> Optional[str]:
+    def get_selected_extracted_graph(self) -> str | None:
         """Get the selected extracted graph from the selected handler."""
         try:
             pipeline = UIService.get_selected_extracted_graph(self.handler_registry)

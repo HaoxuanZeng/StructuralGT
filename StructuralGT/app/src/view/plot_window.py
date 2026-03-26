@@ -1,11 +1,11 @@
 """Plot window for StructuralGT GUI."""
 
+from controller.app_controller import AppController
 from PySide6.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
     QWidget,
 )
-from service.main_controller import MainController
 
 from view.widgets.plot_view_widget import PlotViewWidget
 
@@ -13,7 +13,7 @@ from view.widgets.plot_view_widget import PlotViewWidget
 class PlotWindow(QMainWindow):
     """Plot window for StructuralGT GUI."""
 
-    def __init__(self, controller: MainController, parent):
+    def __init__(self, controller: AppController, parent):
         """Initialize the plot window."""
         super().__init__(parent)
         self.controller = controller

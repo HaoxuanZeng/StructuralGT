@@ -4,6 +4,7 @@ import matplotlib
 
 matplotlib.use("QtAgg")
 
+from controller.app_controller import AppController
 from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg,
     NavigationToolbar2QT,
@@ -20,7 +21,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from service.main_controller import MainController
 from view.widgets.project_widget import HandlerListItemWidget
 
 
@@ -41,7 +41,7 @@ class MplCanvas(FigureCanvasQTAgg):
 class PlotViewWidget(QWidget):
     """Plot view widget for StructuralGT GUI."""
 
-    def __init__(self, parent, controller: MainController):
+    def __init__(self, parent, controller: AppController):
         """Initialize the plot view widget."""
         super().__init__(parent)
         self.controller = controller

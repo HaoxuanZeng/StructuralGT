@@ -1,6 +1,7 @@
 """Project widget for StructuralGT GUI."""
 
-from model.handler import HandlerRegistry, NetworkHandler, PointNetworkHandler
+from controller.app_controller import AppController
+from model.handler import NetworkHandler
 from model.handler_list_model import HandlerListModel
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import (
@@ -14,7 +15,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from service.main_controller import MainController
 from view.dialogs.dimension_dialog import DimensionDialog
 from view.dialogs.file_dialog import select_file, select_folder
 
@@ -112,7 +112,7 @@ class ProjectWidget(QWidget):
 
     def __init__(
         self,
-        controller: MainController,
+        controller: AppController,
         parent,
     ):
         """Initialize the project widget."""
