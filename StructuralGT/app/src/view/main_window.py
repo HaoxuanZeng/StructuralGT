@@ -17,12 +17,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from service.settings_service import SettingsService
 
 from StructuralGT import __version__
 from view.dialogs.about_dialog import AboutDialog
 from view.dialogs.alert_dialog import show_alert
-from view.dialogs.settings_dialog import SettingsDialog
 from view.plot_window import PlotWindow
 from view.resources import get_icon_path
 from view.widgets.analysis_widget import AnalysisWidget
@@ -38,11 +36,10 @@ from view.widgets.welcome_widget import WelcomePage
 class MainWindow(QMainWindow):
     """Main window for StructuralGT GUI."""
 
-    def __init__(self, controller: AppFacade, settings_service: SettingsService):
+    def __init__(self, controller: AppFacade):
         """Initialize the main window."""
         super().__init__()
         self.controller = controller
-        self.settings_service = settings_service
         self.setWindowTitle("StructuralGT")
         self.setGeometry(100, 100, 1200, 800)
         self.setMinimumSize(900, 600)
@@ -334,11 +331,6 @@ class StatusBar(QStatusBar):
         self.setFixedHeight(30)
         self.setContentsMargins(5, 0, 5, 0)
 
-        self.settings_button = QToolButton()
-        self.settings_button.setIcon(QIcon(get_icon_path("settings.png")))
-        self.settings_button.setToolTip("Settings")
-        self.settings_button.clicked.connect(self._on_settings_clicked)
-
         self.console_button = QToolButton()
         self.console_button.setIcon(QIcon(get_icon_path("console.png")))
         self.console_button.setToolTip("Console")
@@ -349,17 +341,10 @@ class StatusBar(QStatusBar):
         self.plot_button.setToolTip("Plot")
         self.plot_button.clicked.connect(self._on_plot_clicked)
 
-        self.addWidget(self.settings_button)
         self.addWidget(self.console_button)
         self.addWidget(self.plot_button)
         version_label = QLabel(f"StructuralGT v{__version__}")
         self.addPermanentWidget(version_label)
-
-    def _on_settings_clicked(self):
-        dialog = SettingsDialog(
-            settings_service=self.main_window.settings_service, parent=self
-        )
-        dialog.exec()
 
     def _on_console_clicked(self):
         if self.main_window:

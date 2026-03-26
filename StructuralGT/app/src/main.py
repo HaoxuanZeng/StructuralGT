@@ -7,7 +7,6 @@ from controller.app_controller import AppController
 from model.handler import HandlerRegistry
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
-from service.settings_service import SettingsService
 from view.main_window import MainWindow
 from view.resources import get_app_icon_path
 
@@ -30,10 +29,9 @@ if __name__ == "__main__":
     app.setStyleSheet(load_stylesheet())
     app.setWindowIcon(QIcon(get_app_icon_path()))
 
-    settings_service = SettingsService()
     handler_registry = HandlerRegistry()
     controller = AppController(handler_registry)
-    window = MainWindow(controller, settings_service=settings_service)
+    window = MainWindow(controller)
     window.show()
 
     def cleanup():
