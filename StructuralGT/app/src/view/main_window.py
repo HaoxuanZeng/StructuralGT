@@ -1,10 +1,10 @@
 """Main window for StructuralGT GUI."""
 
+from controller.app_facade import AppFacade
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
-    QDialog,
     QGridLayout,
     QLabel,
     QMainWindow,
@@ -17,7 +17,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from controller.app_controller import AppController
 from service.settings_service import SettingsService
 
 from StructuralGT import __version__
@@ -39,7 +38,7 @@ from view.widgets.welcome_widget import WelcomePage
 class MainWindow(QMainWindow):
     """Main window for StructuralGT GUI."""
 
-    def __init__(self, controller: AppController, settings_service: SettingsService):
+    def __init__(self, controller: AppFacade, settings_service: SettingsService):
         """Initialize the main window."""
         super().__init__()
         self.controller = controller
@@ -255,7 +254,7 @@ class MainWindow(QMainWindow):
 class LeftPanel(QWidget):
     """Left panel for StructuralGT GUI."""
 
-    def __init__(self, controller: AppController, main_window: MainWindow):
+    def __init__(self, controller: AppFacade, main_window: MainWindow):
         """Initialize the left panel."""
         super().__init__()
         self.setMinimumWidth(300)
@@ -287,7 +286,7 @@ class LeftPanel(QWidget):
 class RightPanel(QWidget):
     """Right panel for StructuralGT GUI."""
 
-    def __init__(self, controller: AppController, main_window: MainWindow):
+    def __init__(self, controller: AppFacade, main_window: MainWindow):
         """Initialize the right panel."""
         super().__init__()
         self.main_window = main_window

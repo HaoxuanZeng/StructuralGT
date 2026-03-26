@@ -1,7 +1,7 @@
 # apps/view/widgets/ribbon_bar.py
 """Ribbon bar widget for StructuralGT GUI."""
 
-from controller.app_controller import AppController
+from controller.app_facade import AppFacade
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -21,7 +21,7 @@ class RibbonBar(QWidget):
     change_view_signal = Signal(str)
     refresh_signal = Signal()
 
-    def __init__(self, controller: AppController, main_window):
+    def __init__(self, controller: AppFacade, main_window):
         """Initialize the ribbon bar widget."""
         super().__init__(main_window)
         self.main_window = main_window

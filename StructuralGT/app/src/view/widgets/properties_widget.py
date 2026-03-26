@@ -3,7 +3,7 @@
 import pathlib
 
 import pandas as pd
-from controller.app_controller import AppController
+from controller.app_facade import AppFacade
 from model.handler import NetworkHandler, PointNetworkHandler
 from model.table_model import TableModel
 from PySide6.QtCore import Qt
@@ -21,7 +21,7 @@ from view.dialogs.file_dialog import export_file
 class PropertiesWidget(QWidget):
     """Properties widget for StructuralGT GUI."""
 
-    def __init__(self, controller: AppController, parent):
+    def __init__(self, controller: AppFacade, parent):
         """Initialize the properties widget."""
         super().__init__(parent)
         self.controller = controller

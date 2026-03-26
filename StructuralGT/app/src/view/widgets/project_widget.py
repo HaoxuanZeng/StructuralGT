@@ -1,6 +1,6 @@
 """Project widget for StructuralGT GUI."""
 
-from controller.app_controller import AppController
+from controller.app_facade import AppFacade
 from model.handler import NetworkHandler
 from model.handler_list_model import HandlerListModel
 from PySide6.QtCore import QPoint, QSize, Qt
@@ -112,7 +112,7 @@ class ProjectWidget(QWidget):
 
     def __init__(
         self,
-        controller: AppController,
+        controller: AppFacade,
         parent,
     ):
         """Initialize the project widget."""
