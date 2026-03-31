@@ -1,6 +1,7 @@
 """Main window for StructuralGT GUI."""
 
 from controller.app_facade import AppFacade
+from controller.event_bus import EventBus
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
@@ -40,6 +41,7 @@ class MainWindow(QMainWindow):
         """Initialize the main window."""
         super().__init__()
         self.controller = controller
+        self._event_bus = EventBus.get_instance()
         self.setWindowTitle("StructuralGT")
         self.setGeometry(100, 100, 1200, 800)
         self.setMinimumSize(900, 600)
@@ -147,22 +149,14 @@ class MainWindow(QMainWindow):
             self.controller.add_point_network
         )
 
-        # Controller Signals
-        self.controller.change_view_signal.connect(self._on_change_view)
-        self.controller.alert_signal.connect(self._on_alert)
-        self.controller.handler_changed_signal.connect(
-            self.left_panel.project_widget.refresh
-        )
-        self.controller.handler_changed_signal.connect(
-            self.plot_window.plot_view.refresh
-        )
-        self.controller.handler_changed_signal.connect(
-            self.right_panel.image_view.refresh
-        )
-        self.controller.binarize_finished_signal.connect(self._on_binarize_finished)
-        self.controller.extract_graph_finished_signal.connect(
-            self._on_extract_graph_finished
-        )
+        # EventBus Signals
+        self._event_bus.view_changed.connect(self._on_change_view)
+        self._event_bus.alert.connect(self._on_alert)
+        self._event_bus.handler_changed.connect(self.left_panel.project_widget.refresh)
+        self._event_bus.handler_changed.connect(self.plot_window.plot_view.refresh)
+        self._event_bus.handler_changed.connect(self.right_panel.image_view.refresh)
+        self._event_bus.binarize_finished.connect(self._on_binarize_finished)
+        self._event_bus.extract_graph_finished.connect(self._on_extract_graph_finished)
 
     def _on_toggle_left_panel(self):
         """Toggle the visibility of the left panel."""

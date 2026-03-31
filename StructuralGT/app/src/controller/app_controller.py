@@ -7,10 +7,11 @@ from datetime import datetime
 import numpy as np
 from model.handler import HandlerRegistry, NetworkHandler, PointNetworkHandler
 from model.task_list_model import Task
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject
 from service.network_service import NetworkService
 from service.ui_service import UIService
 
+from controller.event_bus import EventBus
 from controller.worker import Worker
 
 logger = logging.getLogger(__name__)
@@ -19,56 +20,51 @@ logger = logging.getLogger(__name__)
 class AppController(QObject):
     """Main controller for StructuralGT GUI."""
 
-    change_view_signal = Signal(str)
-    alert_signal = Signal(str, str)
-    handler_changed_signal = Signal()
-    binarize_finished_signal = Signal(bool)
-    extract_graph_finished_signal = Signal(str)
-    compute_graph_properties_finished_signal = Signal(bool)
-    task_changed_signal = Signal()
-
-    def __init__(self, handler_registry: HandlerRegistry):
+    def __init__(self, handler_registry: HandlerRegistry) -> None:
         """Initialize the main controller."""
         super().__init__()
         self.handler_registry = handler_registry
-        self._active_threads = []
+        self._active_threads: list[Worker] = []
+        self._event_bus = EventBus.get_instance()
+        logger.info("AppController initialized")
 
-    # ========================= Main thread methods =========================
-    def add_network(self, folder_path: str, dim: int):
-        """Add a network to the handler registry."""
+    def add_network(self, folder_path: str, dim: int) -> None:
+        """Add a network to the handler registry.
+
+        Args:
+            folder_path: Path to the folder containing images.
+            dim: Dimensionality (2 or 3).
+        """
         try:
             NetworkService.add_network(self.handler_registry, folder_path, dim)
         except Exception as e:
-            self.alert_signal.emit("Failed to add Network", repr(e))
+            self._event_bus.emit_alert("Failed to add Network", repr(e))
             return
-        self.handler_changed_signal.emit()
-        self.change_view_signal.emit("Raw Image")
-        return
+        self._event_bus.emit_handler_changed()
+        self._event_bus.emit_view_changed("Raw Image")
 
-    def add_point_network(self, file_path: str):
+    def add_point_network(self, file_path: str) -> None:
         """Add a point network to the handler registry."""
         try:
             NetworkService.add_point_network(self.handler_registry, file_path)
         except Exception as e:
-            self.alert_signal.emit("Failed to add Point Network", repr(e))
+            self._event_bus.emit_alert("Failed to add Point Network", repr(e))
             return
         self.handler_changed_signal.emit()
         pipeline = UIService.get_selected_extracted_graph(self.handler_registry)
-        self.extract_graph_finished_signal.emit(pipeline)
-        self.change_view_signal.emit("Extracted Graph Only")
-        return
+        self._event_bus.emit_extract_graph_finished(pipeline)
+        self._event_bus.emit_view_changed("Extracted Graph Only")
 
     def delete_network(self, index: int):
         """Delete a network from the handler registry."""
         try:
             NetworkService.delete_network(self.handler_registry, index)
         except Exception as e:
-            self.alert_signal.emit("Failed to delete Network/Point Network", repr(e))
+            self._event_bus.emit_alert("Failed to delete Network/Point Network", repr(e))
             return
-        self.handler_changed_signal.emit()
+        self._event_bus.emit_handler_changed()
         if self.handler_registry.count() == 0:
-            self.change_view_signal.emit("Welcome Page")
-        return
+            self._event_bus.emit_view_changed("Welcome Page")
 
     def get_selected_handler(self):
         """Get the selected handler from the handler registry."""
@@ -79,64 +75,58 @@ class AppController(QObject):
         try:
             UIService.set_selected_index(self.handler_registry, index)
         except Exception as e:
-            self.alert_signal.emit("Failed to set selected index", repr(e))
+            self._event_bus.emit_alert("Failed to set selected index", repr(e))
             return
-        self.handler_changed_signal.emit()
+        self._event_bus.emit_handler_changed()
 
-        # Update view based on handler type
         handler = self.handler_registry.get(index)
         if handler is not None:
             if isinstance(handler, NetworkHandler):
-                self.change_view_signal.emit("Raw Image")
+                self._event_bus.emit_view_changed("Raw Image")
             elif isinstance(handler, PointNetworkHandler):
-                # Get the graph pipeline for point network
                 pipeline = self.get_selected_extracted_graph()
                 if pipeline:
-                    self.extract_graph_finished_signal.emit(pipeline)
-                self.change_view_signal.emit("Extracted Graph Only")
+                    self._event_bus.emit_extract_graph_finished(pipeline)
+                self._event_bus.emit_view_changed("Extracted Graph Only")
 
-        return
-
-    def set_selected_slice_index(self, index: int):
+    def set_selected_slice_index(self, index: int) -> None:
         """Set the selected slice index of the selected handler."""
         try:
             UIService.set_selected_slice_index(self.handler_registry, index)
         except Exception as e:
-            self.alert_signal.emit("Failed to set selected slice index", repr(e))
+            self._event_bus.emit_alert("Failed to set selected slice index", repr(e))
             return
-        self.handler_changed_signal.emit()
-        return
+        self._event_bus.emit_handler_changed()
 
     def get_selected_slice_raw_image(self, index: int) -> np.ndarray | None:
         """Get the selected slice raw image from the selected handler."""
         try:
-            image = UIService.get_selected_slice_raw_image(self.handler_registry, index)
+            return UIService.get_selected_slice_raw_image(
+                self.handler_registry, index
+            )
         except Exception as e:
-            self.alert_signal.emit("Failed to get selected slice raw image", repr(e))
+            self._event_bus.emit_alert("Failed to get selected slice raw image", repr(e))
             return None
-        return image
 
     def get_selected_slice_binarized_image(self, index: int) -> np.ndarray | None:
         """Get the selected slice binarized image from the selected handler."""
         try:
-            image = UIService.get_selected_slice_binarized_image(
+            return UIService.get_selected_slice_binarized_image(
                 self.handler_registry, index
             )
         except Exception as e:
-            self.alert_signal.emit(
+            self._event_bus.emit_alert(
                 "Failed to get selected slice binarized image", repr(e)
             )
             return None
-        return image
 
     def get_selected_extracted_graph(self) -> str | None:
         """Get the selected extracted graph from the selected handler."""
         try:
-            pipeline = UIService.get_selected_extracted_graph(self.handler_registry)
+            return UIService.get_selected_extracted_graph(self.handler_registry)
         except Exception as e:
-            self.alert_signal.emit("Failed to get selected extracted graph", repr(e))
+            self._event_bus.emit_alert("Failed to get selected extracted graph", repr(e))
             return None
-        return pipeline
 
     def plot_selected_handler(self, plot_name: str, ax):
         """Plot the selected handler."""
@@ -150,17 +140,23 @@ class AppController(QObject):
             "betweenness_centrality_distribution": NetworkService.plot_betweenness_centrality_distribution,
             "closeness_centrality_distribution": NetworkService.plot_closeness_centrality_distribution,
         }
-        fn = dispatch[plot_name]
+        fn = dispatch.get(plot_name)
+        if fn is None:
+            self._emit_alert("Invalid plot", f"Unknown plot type: {plot_name}")
+            return
         try:
             fn(self.handler_registry, ax)
         except Exception as e:
-            self.alert_signal.emit("Failed to plot", repr(e))
+            self._event_bus.emit_alert("Failed to plot", repr(e))
 
-    # ========================= Worker thread methods =========================
-    def binarize_selected_network(self, options: dict):
-        """Binarize the selected network."""
+    def binarize_selected_network(self, options: dict) -> None:
+        """Binarize the selected network in a background thread.
+
+        Args:
+            options: Binarization options dictionary.
+        """
         if self.handler_registry.task_count() >= 10:
-            self.alert_signal.emit(
+            self._event_bus.emit_alert(
                 "Task limit reached", "Maximum of 10 concurrent tasks allowed."
             )
             return
@@ -172,21 +168,21 @@ class AppController(QObject):
         task = Task(task_id=str(uuid.uuid4()), task_type="Binarize")
         handler["tasks"]["Binarize"] = task
         task.status = "Running"
-        self.task_changed_signal.emit()
+        self._event_bus.emit_task_changed()
         logger.info(f"Task {task.task_id} created for binarization")
 
         def on_finished(result, error=None):
             """Send signals to the main thread."""
             handler["tasks"]["Binarize"] = None
-            self.task_changed_signal.emit()
+            self._event_bus.emit_task_changed()
 
             if error:
                 logger.error(f"Task {task.task_id} failed: {error}")
-                self.alert_signal.emit("Failed to binarize network", repr(error))
-                self.binarize_finished_signal.emit(False)
+                self._event_bus.emit_alert("Failed to binarize network", repr(error))
+                self._event_bus.emit_binarize_finished(False)
             else:
-                self.handler_changed_signal.emit()
-                self.binarize_finished_signal.emit(True)
+                self._event_bus.emit_handler_changed()
+                self._event_bus.emit_binarize_finished(True)
 
         worker = Worker(
             NetworkService.binarize_selected_network,
@@ -203,7 +199,7 @@ class AppController(QObject):
     def extract_graph_from_selected_network(self, weight_type=None):
         """Extract the graph from the selected network."""
         if self.handler_registry.task_count() >= 10:
-            self.alert_signal.emit(
+            self._event_bus.emit_alert(
                 "Task limit reached", "Maximum of 10 concurrent tasks allowed."
             )
             return
@@ -215,21 +211,21 @@ class AppController(QObject):
         task = Task(task_id=str(uuid.uuid4()), task_type="Extract Graph")
         handler["tasks"]["Extract Graph"] = task
         task.status = "Running"
-        self.task_changed_signal.emit()
+        self._event_bus.emit_task_changed()
         logger.info(f"Task {task.task_id} created for graph extraction")
 
         def on_finished(result, error=None):
             """Send signals to the main thread."""
             handler["tasks"]["Extract Graph"] = None
-            self.task_changed_signal.emit()
+            self._event_bus.emit_task_changed()
             if error:
                 logger.error(f"Task {task.task_id} failed: {error}")
-                self.alert_signal.emit("Failed to extract graph", repr(error))
-                self.extract_graph_finished_signal.emit(None)
+                self._event_bus.emit_alert("Failed to extract graph", repr(error))
+                self._event_bus.emit_extract_graph_finished(None)
             else:
                 pipeline = self.get_selected_extracted_graph()
-                self.handler_changed_signal.emit()
-                self.extract_graph_finished_signal.emit(pipeline)
+                self._event_bus.emit_handler_changed()
+                self._event_bus.emit_extract_graph_finished(pipeline)
 
         worker = Worker(
             NetworkService.extract_graph_from_selected_network,
@@ -246,7 +242,7 @@ class AppController(QObject):
     def compute_graph_properties_from_selected_network(self, options: dict):
         """Compute the graph properties of the selected network."""
         if self.handler_registry.task_count() >= 10:
-            self.alert_signal.emit(
+            self._event_bus.emit_alert(
                 "Task limit reached", "Maximum of 10 concurrent tasks allowed."
             )
             return
@@ -255,25 +251,25 @@ class AppController(QObject):
         if not handler or handler["tasks"]["Compute Graph Properties"]:
             return
 
-        task = Task(task_id=str(uuid.uuid4()), task_type="Compute Graph Properties")
+        task = Task(
+            task_id=str(uuid.uuid4()), task_type="Compute Graph Properties"
+        )
         handler["tasks"]["Compute Graph Properties"] = task
         task.status = "Running"
-        self.task_changed_signal.emit()
+        self._event_bus.emit_task_changed()
         logger.info(f"Task {task.task_id} created for graph properties computation")
 
         def on_finished(result, error=None):
             """Send signals to the main thread."""
             handler["tasks"]["Compute Graph Properties"] = None
-            self.task_changed_signal.emit()
+            self._event_bus.emit_task_changed()
             if error:
                 logger.error(f"Task {task.task_id} failed: {error}")
-                self.alert_signal.emit(
-                    "Failed to compute graph properties", repr(error)
-                )
-                self.compute_graph_properties_finished_signal.emit(False)
+                self._event_bus.emit_alert("Failed to compute graph properties", repr(error))
+                self._event_bus.emit_compute_properties_finished(False)
             else:
-                self.handler_changed_signal.emit()
-                self.compute_graph_properties_finished_signal.emit(True)
+                self._event_bus.emit_handler_changed()
+                self._event_bus.emit_compute_properties_finished(True)
 
         worker = Worker(
             NetworkService.compute_graph_properties,
@@ -304,20 +300,19 @@ class AppController(QObject):
                             f"Task {task_id} cancelled at "
                             f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
                         )
-                        self.task_changed_signal.emit()
+                        self._event_bus.emit_task_changed()
                         return
-                    elif task.status == "Pending":
+                    if task.status == "Pending":
                         handler["tasks"][task_type] = None
                         logger.info(
                             f"Task {task_id} cancelled at "
                             f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
                         )
-                        self.task_changed_signal.emit()
+                        self._event_bus.emit_task_changed()
                         return
         logger.warning(f"Task {task_id} not found for cancellation")
-        return
 
-    def cleanup_threads(self):
+    def cleanup_threads(self) -> None:
         """Clean up all active threads on app shutdown."""
         for thread in self._active_threads[:]:
             if thread.isRunning():

@@ -4,6 +4,7 @@ import pathlib
 
 import pandas as pd
 from controller.app_facade import AppFacade
+from controller.event_bus import EventBus
 from model.handler import NetworkHandler, PointNetworkHandler
 from model.table_model import TableModel
 from PySide6.QtCore import Qt
@@ -25,6 +26,7 @@ class PropertiesWidget(QWidget):
         """Initialize the properties widget."""
         super().__init__(parent)
         self.controller = controller
+        self._event_bus = EventBus.get_instance()
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         layout = QVBoxLayout(self)
@@ -84,11 +86,9 @@ class PropertiesWidget(QWidget):
         self.export_button.clicked.connect(self._on_export_button_clicked)
         layout.addWidget(self.export_button)
 
-        self.controller.handler_changed_signal.connect(self.refresh)
-        self.controller.compute_graph_properties_finished_signal.connect(
-            self._on_compute_finished
-        )
-        self.controller.extract_graph_finished_signal.connect(self.refresh)
+        self._event_bus.handler_changed.connect(self.refresh)
+        self._event_bus.compute_properties_finished.connect(self._on_compute_finished)
+        self._event_bus.extract_graph_finished.connect(self.refresh)
 
         self.refresh()
 

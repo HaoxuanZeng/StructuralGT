@@ -60,7 +60,7 @@ class EventBus(QObject):
         logger.debug(f"Emitting binarize_finished: {success}")
         self.binarize_finished.emit(success)
 
-    def emit_extract_graph_finished(self, pipeline: str) -> None:
+    def emit_extract_graph_finished(self, pipeline) -> None:
         """Emit the extract_graph_finished signal."""
         logger.debug(f"Emitting extract_graph_finished: {pipeline}")
         self.extract_graph_finished.emit(pipeline)
